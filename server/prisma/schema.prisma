@@ -1,0 +1,200 @@
+// Mosswood – Datenmodell
+// Ein Tal (Valley) vereint 5–8 Spieler. Jeder Spieler (User) besitzt genau ein
+// Heimatdorf (Village) mit Gebäuden (Building) und Dorfbewohnern (Villager).
+// Gemeinsame Ziele: Monumental-Projekte (ValleyProject) und das Handelsschiff (TradeShip).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VillagerState {
+  IDLE // wartet auf dem Dorfplatz
+  WORKING // arbeitet an der zugewiesenen Arbeitsstätte
+  HUNGRY // hat Hunger und sucht Essen im Lager
+  EATING // isst gerade
+  TIRED // ist erschöpft und geht nach Hause
+  RESTING // ruht sich aus
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum ShipStatus {
+  INCOMING // ist unterwegs ins Tal
+  DOCKED // liegt im Hafen und nimmt Waren an
+  COMPLETED // alle Kisten beladen, Belohnung verteilt
+  DEPARTED // ist abgefahren, ohne voll zu sein
+}
+
+model User {
+  id               String   @id @default(cuid())
+  displayName      String
+  sessionTokenHash String   @unique
+  seals            Int      @default(0) // seltene Währung „Siegel“
+  prestige         Int      @default(0)
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+
+  valleyId String?
+  valley   Valley? @relation(fields: [valleyId], references: [id], onDelete: SetNull)
+
+  village       Village?
+  contributions ProjectContribution[]
+  shipLoads     ShipLoad[]
+  research      ResearchUnlock[]
+
+  @@index([valleyId])
+}
+
+model Valley {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  maxMembers Int      @default(8)
+  createdAt  DateTime @default(now())
+
+  members  User[]
+  projects ValleyProject[]
+  ships    TradeShip[]
+  research ResearchUnlock[]
+}
+
+model Village {
+  id         String   @id @default(cuid())
+  name       String
+  inventory  Json     @default("{}") // { wood: 12, planks: 3, ... }
+  storageCap Int      @default(100) // Basis-Lagerkapazität pro Rohstoff
+  lastTickAt DateTime @default(now()) // bis hierhin ist die Simulation gerechnet
+  createdAt  DateTime @default(now())
+
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  buildings Building[]
+  villagers Villager[]
+}
+
+model Building {
+  id       String  @id @default(cuid())
+  type     String // Schlüssel aus game/content.js, z. B. "sawmill"
+  level    Int     @default(1)
+  progress Float   @default(0) // Sekunden im aktuellen Produktionszyklus
+  loaded   Boolean @default(false) // Zutaten für den aktuellen Zyklus sind verbraucht
+  stock    Json    @default("{}") // fertige Waren, die noch eingesammelt werden müssen
+
+  villageId String
+  village   Village @relation(fields: [villageId], references: [id], onDelete: Cascade)
+
+  villagers Villager[]
+
+  @@unique([villageId, type])
+}
+
+model Villager {
+  id         String        @id @default(cuid())
+  name       String
+  state      VillagerState @default(IDLE)
+  energy     Float         @default(100)
+  satiety    Float         @default(100)
+  stateTimer Float         @default(0) // Restsekunden für EATING / TIRED / RESTING
+  createdAt  DateTime      @default(now())
+
+  villageId String
+  village   Village @relation(fields: [villageId], references: [id], onDelete: Cascade)
+
+  buildingId String?
+  building   Building? @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+
+  @@index([villageId])
+}
+
+model ValleyProject {
+  id           String        @id @default(cuid())
+  key          String // Schlüssel aus game/content.js
+  name         String
+  icon         String
+  description  String
+  requirements Json // { planks: 300, bricks: 200 }
+  progress     Json          @default("{}")
+  status       ProjectStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+  completedAt  DateTime?
+
+  valleyId String
+  valley   Valley @relation(fields: [valleyId], references: [id], onDelete: Cascade)
+
+  contributions ProjectContribution[]
+
+  @@unique([valleyId, key])
+}
+
+model ProjectContribution {
+  id        String   @id @default(cuid())
+  resource  String
+  amount    Int
+  createdAt DateTime @default(now())
+
+  projectId String
+  project   ValleyProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model TradeShip {
+  id          String     @id @default(cuid())
+  status      ShipStatus @default(INCOMING)
+  demands     Json // [{ resource: "planks", amount: 24 }, ...]
+  progress    Json       @default("{}")
+  arrivesAt   DateTime
+  departsAt   DateTime
+  completedAt DateTime?
+
+  valleyId String
+  valley   Valley @relation(fields: [valleyId], references: [id], onDelete: Cascade)
+
+  loads ShipLoad[]
+
+  @@index([valleyId, arrivesAt])
+}
+
+model ShipLoad {
+  id        String   @id @default(cuid())
+  resource  String
+  amount    Int
+  createdAt DateTime @default(now())
+
+  shipId String
+  ship   TradeShip @relation(fields: [shipId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shipId])
+}
+
+// Freigeschaltete Technologie – gehört entweder einem Spieler oder dem ganzen Tal.
+model ResearchUnlock {
+  id         String   @id @default(cuid())
+  techKey    String
+  unlockedAt DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  valleyId String?
+  valley   Valley? @relation(fields: [valleyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, techKey])
+  @@unique([valleyId, techKey])
+}

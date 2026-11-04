@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+/* Mosswood-Palette: Moosgrün, Pergament, Honig, Terrakotta, Rinde */
+@theme {
+  --font-display: "Fredoka", ui-rounded, system-ui, sans-serif;
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+
+  --color-moss-50: #f3f7ec;
+  --color-moss-100: #e3eed2;
+  --color-moss-200: #c8dda8;
+  --color-moss-300: #a5c676;
+  --color-moss-400: #84ad4f;
+  --color-moss-500: #679236;
+  --color-moss-600: #4f7429;
+  --color-moss-700: #3e5a23;
+  --color-moss-800: #344920;
+  --color-moss-900: #2c3e1d;
+
+  --color-cream: #fdf9ef;
+  --color-parchment: #f4ead3;
+  --color-honey-200: #fbe6b0;
+  --color-honey-300: #f7d27a;
+  --color-honey-400: #f2bb45;
+  --color-honey-500: #e39f22;
+  --color-clay-200: #f3cdb8;
+  --color-clay-400: #d98b62;
+  --color-clay-500: #c46e43;
+  --color-bark-500: #93704f;
+  --color-bark-600: #7a5a3d;
+  --color-bark-700: #5e4430;
+  --color-bark-900: #3a2a1d;
+  --color-creek-200: #cde8ee;
+  --color-creek-400: #7cc0cf;
+  --color-creek-600: #3f8a9c;
+
+  --shadow-soft: 0 2px 0 rgb(94 68 48 / 0.12), 0 8px 24px -12px rgb(58 42 29 / 0.25);
+  --shadow-lift: 0 3px 0 rgb(94 68 48 / 0.16), 0 14px 30px -12px rgb(58 42 29 / 0.35);
+}
+
+@layer base {
+  html {
+    background: var(--color-moss-100);
+  }
+  body {
+    @apply min-h-dvh font-sans text-bark-900 antialiased;
+    background:
+      radial-gradient(1200px 500px at 10% -10%, var(--color-honey-200) 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, var(--color-creek-200) 0%, transparent 55%),
+      linear-gradient(180deg, var(--color-cream) 0%, var(--color-moss-100) 100%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@utility card {
+  @apply rounded-3xl border-2 border-bark-900/10 bg-cream shadow-soft;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-2xl px-4 py-2 font-display font-semibold
+    transition active:translate-y-px disabled:opacity-50 disabled:active:translate-y-0;
+}
+
+@utility btn-primary {
+  @apply btn bg-moss-500 text-white shadow-[0_3px_0_var(--color-moss-700)] hover:bg-moss-600;
+}
+
+@utility btn-honey {
+  @apply btn bg-honey-400 text-bark-900 shadow-[0_3px_0_var(--color-honey-500)] hover:bg-honey-300;
+}
+
+@utility btn-ghost {
+  @apply btn bg-parchment text-bark-700 hover:bg-honey-200;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.animate-bob {
+  animation: bob 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-bob { animation: none; }
+}

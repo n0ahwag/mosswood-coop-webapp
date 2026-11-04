@@ -1,0 +1,25 @@
+{
+  "name": "mosswood-coop-webapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mosswood – ein kooperatives, friedliches Tal-Aufbauspiel im Browser",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c green,yellow \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "test": "npm test -w server",
+    "typecheck": "npm run typecheck -w client",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:deploy": "npm run db:deploy -w server",
+    "db:seed": "npm run db:seed -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
