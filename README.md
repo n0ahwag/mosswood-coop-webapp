@@ -142,6 +142,25 @@ npm run dev                               # Server :4000 und Client :5173 parall
 | `npm run db:seed` | Demo-Tal anlegen |
 | `npm run db:studio -w server` | Prisma Studio zum Durchsehen der Daten |
 
+## Online stellen (GitHub Pages + Render + Neon)
+
+GitHub Pages liefert nur statische Dateien aus. Deshalb ist das Spiel aufgeteilt:
+
+| Teil | Hosting | Adresse |
+| --- | --- | --- |
+| Client (React) | GitHub Pages, automatisch bei jedem Push auf `main` | https://n0ahwag.github.io/mosswood-coop-webapp/ |
+| Server (Express + Socket.io) | Render, Blueprint in [`render.yaml`](render.yaml) | z. B. `https://mosswood-server.onrender.com` |
+| Datenbank (PostgreSQL) | Neon (kostenloser Tarif) | Verbindungs-URL aus dem Neon-Dashboard |
+
+**Einmalige Einrichtung**
+
+1. **Neon:** Projekt anlegen und die *direkte* Verbindungs-URL kopieren (ohne `-pooler` im Hostnamen, mit `?sslmode=require`).
+2. **Render:** *New → Blueprint* wählen, dieses Repository verbinden und bei `DATABASE_URL` die Neon-URL eintragen. Die Migrationen laufen beim Start automatisch.
+3. **GitHub:** Unter *Settings → Secrets and variables → Actions → Variables* die Variable `API_URL` mit der Render-Adresse anlegen (ohne Schrägstrich am Ende).
+4. Den Workflow *GitHub Pages* unter *Actions* einmal neu starten oder etwas auf `main` pushen.
+
+Gut zu wissen: Der kostenlose Render-Server schläft nach 15 Minuten ohne Besucher ein. Der erste Aufruf danach dauert etwa eine Minute. Weitere erlaubte Herkünfte lassen sich in `CORS_ORIGIN` kommagetrennt ergänzen.
+
 ## Konfiguration
 
 Alle Variablen stehen in `server/.env.example`:
@@ -150,7 +169,7 @@ Alle Variablen stehen in `server/.env.example`:
 | --- | --- | --- |
 | `DATABASE_URL` | – | PostgreSQL-Verbindung |
 | `PORT` | `4000` | HTTP-/WebSocket-Port |
-| `CORS_ORIGIN` | `http://localhost:5173` | Erlaubte Herkunft des Clients |
+| `CORS_ORIGIN` | `http://localhost:5173` | Erlaubte Herkünfte des Clients (kommagetrennt) |
 | `TICK_MS` | `2000` | Simulations- und Sync-Intervall für verbundene Spieler |
 | `MAX_OFFLINE_SECONDS` | `28800` | Maximal nachgerechneter Offline-Fortschritt (8 h) |
 | `SHIP_INTERVAL_MINUTES` | `240` | Pause zwischen zwei Schiffsbesuchen |

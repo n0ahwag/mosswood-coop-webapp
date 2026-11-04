@@ -5,7 +5,11 @@ const num = (value, fallback) => {
 
 export const config = {
   port: num(process.env.PORT, 4000),
-  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  // mehrere Herkünfte kommagetrennt, z. B. "https://n0ahwag.github.io,http://localhost:5173"
+  corsOrigin: (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean),
   // wie oft das Dorf verbundener Spieler simuliert und an den Client gesendet wird
   tickMs: num(process.env.TICK_MS, 2000),
   // maximal nachgerechneter Offline-Fortschritt

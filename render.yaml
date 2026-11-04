@@ -1,0 +1,19 @@
+# Render-Blueprint für den Mosswood-Server (Express + Socket.io).
+# Die Datenbank liegt extern (z. B. Neon), deshalb wird DATABASE_URL beim Anlegen abgefragt.
+services:
+  - type: web
+    name: mosswood-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci --workspace server --include-workspace-root=false
+    startCommand: npm run db:deploy -w server && npm start -w server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://n0ahwag.github.io

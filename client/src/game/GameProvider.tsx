@@ -2,7 +2,7 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { api, ApiError } from '../lib/api';
+import { api, ApiError, SERVER_URL } from '../lib/api';
 import type {
   Ack, GameContent, Me, ValleyEvent, ValleyState, VillageState,
 } from '../lib/types';
@@ -80,7 +80,7 @@ export function GameProvider({
 
   // Echtzeit-Verbindung
   useEffect(() => {
-    const socket = io({ auth: { token }, transports: ['websocket', 'polling'] });
+    const socket = io(SERVER_URL || undefined, { auth: { token }, transports: ['websocket', 'polling'] });
     socketRef.current = socket;
 
     socket.on('connect', () => setConnected(true));
