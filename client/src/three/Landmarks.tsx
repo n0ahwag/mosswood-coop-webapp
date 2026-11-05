@@ -6,6 +6,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { clothMat, GrowIn } from './Buildings';
+import { wasDrag } from './dragGuard';
 import { House, Smoke } from './House';
 import { useHtmlPortal } from './htmlPortal';
 import { facePlaza, heightAt, PLOTS, type LandmarkKey, type Vec3 } from './layout';
@@ -331,6 +332,7 @@ export function Landmark({
 
   const activate = (e?: ThreeEvent<MouseEvent>) => {
     e?.stopPropagation();
+    if (wasDrag()) return;
     if (kind === 'trainStation') {
       setDeparting(Date.now());
       setTimeout(() => setDeparting(0), 2600);
@@ -358,7 +360,7 @@ export function Landmark({
           {kind === 'researchLab' ? <ResearchTower /> : <TrainStation departing={departing} toWorld={toWorld} baseY={plot.y} />}
         </GrowIn>
       </group>
-      <Html portal={portal} position={[0, plot.labelHeight, 0]} center distanceFactor={15} zIndexRange={[35, 0]}>
+      <Html portal={portal} position={[0, plot.labelHeight, 0]} center distanceFactor={11} zIndexRange={[35, 0]}>
         <button className={`scene-label text-center ${highlight ? 'is-selected' : ''}`} onClick={() => activate()}>
           <div className="whitespace-nowrap">{text.icon} {text.name}</div>
           <div className="text-[11px] font-bold whitespace-nowrap text-bark-500">{text.action}</div>

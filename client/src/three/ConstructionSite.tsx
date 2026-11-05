@@ -223,7 +223,7 @@ export function ConstructionSite({
       )}
       {(selected || highlight) && <Ring radius={plot.radius * 0.95} color={plan.affordable ? '#9be36b' : C.gold} speed={3} />}
 
-      <Html portal={portal} position={[0, plot.labelHeight + (plan.affordable ? 0.6 : 0), 0]} center distanceFactor={15} zIndexRange={[25, 0]}>
+      <Html portal={portal} position={[0, plot.labelHeight + (plan.affordable ? 0.6 : 0), 0]} center distanceFactor={11} zIndexRange={[25, 0]}>
         <button
           className={`scene-label text-center ${selected || highlight ? 'is-selected' : ''} ${locked ? 'opacity-80' : ''}`}
           onClick={() => onClick(plan.type)}

@@ -609,7 +609,7 @@ export function BuildingPlot({
           <BuildingModel type={building.type} working={working} />
         </GrowIn>
       </group>
-      <Html portal={portal} position={[0, plot.labelHeight, 0]} center distanceFactor={15} zIndexRange={[30, 0]}>
+      <Html portal={portal} position={[0, plot.labelHeight, 0]} center distanceFactor={11} zIndexRange={[30, 0]}>
         <div className={`scene-label ${selected ? 'is-selected' : ''}`} onClick={() => onClick(building.id)}>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="size-2 shrink-0 rounded-full" style={{ background: STATUS_DOT[building.status] }} />

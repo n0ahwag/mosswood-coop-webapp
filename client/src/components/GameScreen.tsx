@@ -1,7 +1,7 @@
 // Vollbild-Spielansicht: Dorf und Tal als 3D-Welten, darüber das HUD.
 // Die Bahn verbindet beide Welten, der Forschungsturm öffnet das Forschungsbuch.
 
-import { Component, lazy, Suspense, useCallback, useMemo, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useGame } from '../game/GameProvider';
 import { nextStep, type Scene } from '../game/guide';
 import { featureUnlock, hasFeature } from '../game/progression';
@@ -53,6 +53,11 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [valleySel, setValleySel] = useState<ValleySelection>(null);
+  // „Zeigen“: schiebt die Kartenansicht zum Ziel des nächsten Schritts
+  const [villageFocus, setVillageFocus] = useState<{ type: string; n: number } | null>(null);
+  const [valleyFocus, setValleyFocus] = useState<
+    { kind: 'project'; key: string; n: number } | { kind: 'ship' | 'station'; n: number } | null
+  >(null);
 
   const researchOpen = hasFeature(village, 'research');
   const valleyOpen = hasFeature(village, 'valley');
@@ -62,6 +67,28 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
     () => nextStep(village, valley, content, scene, villagerName),
     [village, valley, content, scene, villagerName],
   );
+
+  const showTarget = useCallback(() => {
+    const t = step?.target;
+    if (!t || t.scene !== scene) return;
+    const n = Date.now();
+    if (t.scene === 'village') setVillageFocus({ type: t.kind === 'building' ? t.type : t.key, n });
+    else setValleyFocus(t.kind === 'project' ? { kind: 'project', key: t.key, n } : { kind: t.kind, n });
+  }, [step, scene]);
+
+  // Neue Aufgabe im Hofbuch: die Ansicht gleitet von selbst zum neuen Ziel.
+  const questStep = village?.progression.step;
+  const lastQuest = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (questStep === undefined) return;
+    const prev = lastQuest.current;
+    lastQuest.current = questStep;
+    if (prev !== undefined && questStep > prev) {
+      const id = setTimeout(showTarget, 1200);
+      return () => clearTimeout(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questStep]);
 
   const goTo = useCallback((to: Scene) => {
     sound.play('whoosh');
@@ -163,6 +190,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
               onPlanClick={onPlanClick}
               onOpenResearch={openResearch}
               onOpenValley={openValley}
+              focusRequest={villageFocus}
             />
           </Suspense>
         </SceneBoundary>
@@ -183,6 +211,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
                 guide={valleyGuide}
                 onSelect={setValleySel}
                 onStation={() => goTo('village')}
+                focusRequest={valleyFocus}
               />
             </Suspense>
           </SceneBoundary>
@@ -190,7 +219,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
       )}
 
       <TopBar scene={scene} onList={() => setModal('list')} />
-      <QuestTracker step={step} scene={scene} />
+      <QuestTracker step={step} scene={scene} onShow={step?.target?.scene === scene ? showTarget : undefined} />
       <ResourcePanel />
 
       {scene === 'village' && (

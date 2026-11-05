@@ -2,22 +2,24 @@
 // in den Hafensee fließt. Monumente wachsen mit dem Fortschritt, am Hafen legt das
 // Handelsschiff an, rundherum liegen die Höfe der Nachbarn.
 
-import { Html, OrbitControls } from '@react-three/drei';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import * as THREE from 'three';
 import type { TradeShip, ValleyMember, ValleyProject } from '../lib/types';
 import { clothMat } from './Buildings';
 import { QUALITY, WorldClock, worldTime } from './clock';
 import { Cottage, Fence } from './House';
-import { HtmlPortalContext, useHtmlPortal, useHudOffset } from './htmlPortal';
+import { tapOnly, wasDrag } from './dragGuard';
+import { HtmlPortalContext, useHtmlPortal } from './htmlPortal';
 import { Beacon, TrainStation } from './Landmarks';
-import { distToSegment, fbm2, hashString, mulberry32, type Vec2 } from './layout';
+import { distToSegment, fbm2, hashString, mulberry32, type Vec2, type Vec3 } from './layout';
 import { box, cyl, mats, sphere } from './materials';
 import { GroundShadow, Lantern, makeTerrainMaterial } from './Mountain';
 import { C } from './palette';
 import { DistantMountains, Lights, SKY, SkyDome } from './Sky';
 import { tex } from './textures';
+import { MapCamera } from './MapCamera';
 import { Meadow, TreeInstances, type MeadowSpot, type PlantItem } from './Vegetation';
 
 const RIVER: Vec2[] = [[-28, -13], [-21, -10], [-12, -6], [-4, -2.5], [3, 3], [6, 10], [6, 15.5]];
@@ -376,7 +378,7 @@ function Monument({
         <cylinderGeometry args={[3.4, 3.4, 0.1, 24]} />
       </mesh>
       <Clickable onClick={() => onSelect(project.key)}>{model}</Clickable>
-      <Html portal={portal} position={[0, 5, 0]} center distanceFactor={18} zIndexRange={[30, 0]}>
+      <Html portal={portal} position={[0, 5, 0]} center distanceFactor={13} zIndexRange={[30, 0]}>
         <button className={`scene-label text-center ${selected || highlight ? 'is-selected' : ''}`} onClick={() => onSelect(project.key)}>
           <div className="whitespace-nowrap">{project.icon} {project.name}</div>
           <div className="mt-1 h-2 w-28 overflow-hidden rounded-full bg-bark-900/15">
@@ -464,7 +466,7 @@ function Harbor({ ship, lockedHint, selected, highlight, onSelect }: {
           </group>
         )}
       </Clickable>
-      <Html portal={portal} position={[0, 4.6, 0]} center distanceFactor={18} zIndexRange={[30, 0]}>
+      <Html portal={portal} position={[0, 4.6, 0]} center distanceFactor={13} zIndexRange={[30, 0]}>
         <button className={`scene-label text-center ${selected || highlight ? 'is-selected' : ''}`} onClick={onSelect}>
           <div className="whitespace-nowrap">{lockedHint ? '🔒' : '⛵'} Hafen</div>
           <div className="text-[11px] font-bold whitespace-nowrap text-bark-500">
@@ -495,7 +497,7 @@ function Farm({ member, index, isMe }: { member: ValleyMember; index: number; is
         </mesh>
       ))}
       <Fence from={[-1.4, 1.3]} to={[0.6, 1.3]} posts={3} />
-      <Html portal={portal} position={[0, 2.8, 0]} center distanceFactor={18} zIndexRange={[20, 0]}>
+      <Html portal={portal} position={[0, 2.8, 0]} center distanceFactor={13} zIndexRange={[20, 0]}>
         <div className={`scene-label pointer-events-none text-center ${isMe ? 'is-selected' : 'opacity-90'}`}>
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span className={`size-2 rounded-full ${member.online ? 'bg-moss-500' : 'bg-bark-900/25'}`} />
@@ -511,6 +513,7 @@ function Station({ highlight, onClick }: { highlight: boolean; onClick: () => vo
   const portal = useHtmlPortal();
   const [departing, setDeparting] = useState(0);
   const go = () => {
+    if (wasDrag()) return;
     setDeparting(Date.now());
     onClick();
   };
@@ -520,7 +523,7 @@ function Station({ highlight, onClick }: { highlight: boolean; onClick: () => vo
       <Clickable onClick={go}>
         <TrainStation departing={departing} />
       </Clickable>
-      <Html portal={portal} position={[0, 3.8, 0]} center distanceFactor={18} zIndexRange={[30, 0]}>
+      <Html portal={portal} position={[0, 3.8, 0]} center distanceFactor={13} zIndexRange={[30, 0]}>
         <button className={`scene-label text-center ${highlight ? 'is-selected' : ''}`} onClick={go}>
           <div className="whitespace-nowrap">🚂 Bahnhof</div>
           <div className="text-[11px] font-bold whitespace-nowrap text-bark-500">Zurück zum Hof</div>
@@ -545,24 +548,14 @@ function Plaza() {
   );
 }
 
-function AdaptiveCamera() {
-  const { camera, size } = useThree();
-  const aspect = size.height ? size.width / size.height : 1.5;
-  useEffect(() => {
-    const k = aspect < 1.2 ? Math.min(2, 1.25 / aspect) : 1;
-    camera.position.set(22 * k, 26 * k, 31 * k);
-    camera.lookAt(0, 0, 1);
-  }, [aspect, camera]);
-  useHudOffset();
-  return null;
-}
-
 // ---------- Szene ----------
+
+const VALLEY_HOME: Vec3 = [0, 0, 1];
 
 export type ValleySelection = { kind: 'project'; key: string } | { kind: 'ship' } | null;
 
 export default function ValleyScene({
-  active, projects, ship, shipLockedHint, members, meId, selection, guide, onSelect, onStation,
+  active, projects, ship, shipLockedHint, members, meId, selection, guide, onSelect, onStation, focusRequest = null,
 }: {
   active: boolean;
   /** Gesetzt, solange das Handelsschiff noch gesperrt ist. */
@@ -575,8 +568,28 @@ export default function ValleyScene({
   guide: { kind: 'project'; key: string } | { kind: 'ship' } | { kind: 'station' } | null;
   onSelect: (s: ValleySelection) => void;
   onStation: () => void;
+  /** „Zeig mir das“: schiebt die Ansicht zu einem Ziel im Tal. */
+  focusRequest?: { kind: 'project'; key: string; n: number } | { kind: 'ship' | 'station'; n: number } | null;
 }) {
   const portalRef = useRef<HTMLDivElement>(null);
+  const select = useMemo(() => tapOnly(onSelect), [onSelect]);
+  // Kamera-Ziel: Auswahl oder Anfrage, jeweils die neueste
+  const [camFocus, setCamFocus] = useState<{ key: string; pos: Vec3 } | null>(null);
+  const spotOf = (sel: { kind: string; key?: string }) =>
+    sel.kind === 'project' ? projectSpot(sel.key ?? '') : sel.kind === 'ship' ? SPOTS.harbor : SPOTS.station;
+  const selKey = selection ? `${selection.kind}:${selection.kind === 'project' ? selection.key : ''}` : '';
+  useEffect(() => {
+    if (!selection) return;
+    const [x, z] = spotOf(selection);
+    setCamFocus({ key: `sel:${selKey}:${Date.now()}`, pos: [x, 0, z] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selKey]);
+  useEffect(() => {
+    if (!focusRequest) return;
+    const [x, z] = spotOf(focusRequest);
+    setCamFocus({ key: `req:${focusRequest.n}`, pos: [x, 0, z] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRequest]);
   const plants = useValleyPlants(members.length);
   const beacon: Vec2 | null = !guide
     ? null
@@ -595,22 +608,21 @@ export default function ValleyScene({
             gl.toneMapping = THREE.NeutralToneMapping;
             gl.toneMappingExposure = 1.0;
           }}
-          onPointerMissed={() => onSelect(null)}
+          onPointerMissed={() => select(null)}
         >
           <WorldClock />
-          <AdaptiveCamera />
+          <MapCamera
+            home={VALLEY_HOME}
+            distance={{ wide: 34, tall: 44 }}
+            minDistance={18}
+            maxDistance={52}
+            panRadius={22}
+            yRange={[0, 1]}
+            focus={camFocus?.pos ?? null}
+            focusKey={camFocus?.key ?? ''}
+          />
           <Lights shadowSize={34} target={[0, 0, 0]} />
           <fog attach="fog" args={[SKY.fog, 70, 260]} />
-          <OrbitControls
-            enablePan={false}
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={14}
-            maxDistance={85}
-            minPolarAngle={0.4}
-            maxPolarAngle={1.2}
-            target={[0, 0, 1]}
-          />
 
           <SkyDome />
           <DistantMountains count={16} minR={75} maxR={130} seed={21} />
@@ -626,7 +638,7 @@ export default function ValleyScene({
               project={p}
               selected={selection?.kind === 'project' && selection.key === p.key}
               highlight={guide?.kind === 'project' && guide.key === p.key}
-              onSelect={(key) => onSelect({ kind: 'project', key })}
+              onSelect={(key) => select({ kind: 'project', key })}
             />
           ))}
           <Harbor
@@ -634,7 +646,7 @@ export default function ValleyScene({
             lockedHint={shipLockedHint}
             selected={selection?.kind === 'ship'}
             highlight={guide?.kind === 'ship'}
-            onSelect={() => onSelect({ kind: 'ship' })}
+            onSelect={() => select({ kind: 'ship' })}
           />
           {members.slice(0, 8).map((m, i) => <Farm key={m.id} member={m} index={i} isMe={m.id === meId} />)}
           <Station highlight={guide?.kind === 'station'} onClick={onStation} />

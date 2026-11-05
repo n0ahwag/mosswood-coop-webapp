@@ -1,18 +1,17 @@
 // Die 3D-Dorfansicht: ein Bergdorf über den Wolken. Wird per React.lazy nachgeladen,
 // damit Three.js nicht im ersten Bundle landet.
 
-import { OrbitControls } from '@react-three/drei';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import * as THREE from 'three';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { GameContent, VillageState } from '../lib/types';
 import { BuildingPlot, DiningTable, Homes } from './Buildings';
 import { QUALITY, WorldClock } from './clock';
 import { ConstructionSite } from './ConstructionSite';
 import { Effects } from './Effects';
 import { Birds, Butterflies, VillageFestive } from './Festive';
-import { HtmlPortalContext, useHudOffset } from './htmlPortal';
+import { tapOnly } from './dragGuard';
+import { HtmlPortalContext } from './htmlPortal';
 import { Beacon, Landmark, RailwayOnly } from './Landmarks';
 import {
   HOME_SLOTS, homeSpot, LAKE, PEAKS, plazaSpot, PLOTS, TABLE_POS, tableSpot, VILLAGE, workSpot, type LandmarkKey, type Vec3,
@@ -28,6 +27,7 @@ const BUTTERFLY_SPOTS: [number, number][] = [
 import { Crossings, Lake, Plaza, Terrain, Waterfalls } from './Mountain';
 import { CloudBanks, CloudSea, DistantMountains, Lights, SKY, SkyDome } from './Sky';
 import { Boulders, Meadow, Trees } from './Vegetation';
+import { MapCamera } from './MapCamera';
 import { Villager3D, type VillagerPlan } from './Villager3D';
 
 export interface VillageSceneProps {
@@ -47,103 +47,30 @@ export interface VillageSceneProps {
   onPlanClick?: (type: string) => void;
   onOpenResearch?: () => void;
   onOpenValley?: () => void;
+  /** „Zeig mir das“: schiebt die Ansicht zu einem Gebäude (n zählt jede Anfrage). */
+  focusRequest?: { type: string; n: number } | null;
 }
 
 const noop = () => {};
 
-/** Mittelpunkt des Berges für die Startansicht */
-const HOME_TARGET = new THREE.Vector3(0.4, 4.2, -0.6);
-const HOME_TARGET_ARR = HOME_TARGET.toArray() as [number, number, number];
-const VIEW_DIR = new THREE.Vector3(14, 15, 17.5).normalize();
-
-function baseDistance(aspect: number) {
-  // Breite Bildschirme zeigen den ganzen Berg; hochkant weiter wegzoomen.
-  return aspect < 1.25 ? Math.min(92, Math.max(50, 62 / aspect)) : 50;
-}
-
-/**
- * Kamera: startet mit Blick auf den ganzen Berg und fliegt sanft zu ausgewählten
- * Gebäuden. Sobald man selbst dreht oder zoomt, endet der Flug.
- */
-function CameraRig({ focus, focusKey }: { focus: Vec3 | null; focusKey: string }) {
-  const { camera, size } = useThree();
-  const controls = useRef<OrbitControlsImpl>(null);
-  const goal = useRef<{ target: THREE.Vector3; distance: number } | null>(null);
-  const aspectStep = size.height > 0 ? Math.round((size.width / size.height) * 10) : 0;
-
-  useEffect(() => {
-    if (!aspectStep) return;
-    const dist = baseDistance(aspectStep / 10);
-    camera.position.copy(HOME_TARGET).addScaledVector(VIEW_DIR, dist);
-    camera.lookAt(HOME_TARGET);
-    controls.current?.target.copy(HOME_TARGET);
-    controls.current?.update();
-  }, [aspectStep, camera]);
-  useHudOffset();
-
-  useEffect(() => {
-    if (!focus) return;
-    const ctl = controls.current;
-    const current = ctl ? camera.position.distanceTo(ctl.target) : 40;
-    goal.current = { target: new THREE.Vector3(...focus), distance: Math.min(current, 30) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusKey]);
-
-  useFrame((_, dt) => {
-    const ctl = controls.current;
-    const g = goal.current;
-    if (!ctl || !g) return;
-    const k = 1 - Math.exp(-dt * 3.2);
-    const offset = camera.position.clone().sub(ctl.target);
-    const dist = offset.length();
-    ctl.target.lerp(g.target, k);
-    const nextDist = dist + (g.distance - dist) * k;
-    camera.position.copy(ctl.target).addScaledVector(offset.normalize(), nextDist);
-    ctl.update();
-    if (ctl.target.distanceTo(g.target) < 0.05 && Math.abs(nextDist - g.distance) < 0.1) goal.current = null;
-  });
-
-  return (
-    <OrbitControls
-      ref={controls}
-      makeDefault
-      enablePan
-      screenSpacePanning={false}
-      enableDamping
-      dampingFactor={0.08}
-      minDistance={9}
-      maxDistance={110}
-      minPolarAngle={0.35}
-      maxPolarAngle={1.22}
-      target={HOME_TARGET_ARR}
-      onStart={() => {
-        goal.current = null;
-      }}
-    />
-  );
-}
-
-/** Begrenzt das Verschieben, damit man den Berg nicht aus den Augen verliert. */
-function PanLimit() {
-  const controls = useThree((s) => s.controls) as OrbitControlsImpl | null;
-  useFrame(() => {
-    if (!controls) return;
-    const t = controls.target;
-    const r = Math.hypot(t.x, t.z);
-    if (r > 22) {
-      t.x *= 22 / r;
-      t.z *= 22 / r;
-    }
-    t.y = THREE.MathUtils.clamp(t.y, 1.5, 12);
-  });
-  return null;
-}
+/** Startansicht: nah am Dorfplatz, der Rest des Berges liegt eine Fingerbewegung entfernt. */
+const HOME: Vec3 = [VILLAGE.pos[0] + 0.5, VILLAGE.y - 0.5, VILLAGE.pos[1] + 0.5];
 
 export default function VillageScene({
   active = true, village, content, selectedVillagerId, selectedBuildingId,
   onSelectVillager, onBuildingClick, onCollect, onBackgroundClick,
-  guide, selectedPlan = null, onPlanClick = noop, onOpenResearch = noop, onOpenValley = noop,
+  guide, selectedPlan = null, onPlanClick = noop, onOpenResearch = noop, onOpenValley = noop, focusRequest = null,
 }: VillageSceneProps) {
+  // Ziehen verschiebt die Karte; nur echtes Tippen wählt etwas aus.
+  const tap = useMemo(() => ({
+    villager: tapOnly(onSelectVillager),
+    building: tapOnly(onBuildingClick),
+    collect: tapOnly(onCollect),
+    background: tapOnly(onBackgroundClick),
+    plan: tapOnly(onPlanClick),
+    research: tapOnly(onOpenResearch),
+    valley: tapOnly(onOpenValley),
+  }), [onSelectVillager, onBuildingClick, onCollect, onBackgroundClick, onPlanClick, onOpenResearch, onOpenValley]);
   const guideType = guide ? (guide.kind === 'building' ? guide.type : guide.key) : null;
   const guidePlot = guideType ? PLOTS[guideType] : undefined;
   const built = useMemo(() => new Set(village.buildings.map((b) => b.type)), [village.buildings]);
@@ -195,10 +122,17 @@ export default function VillageScene({
     return out;
   }, [village.buildings, village.villagers, content.buildings]);
 
-  // Kamera-Ziel: ausgewähltes Gebäude oder Bauplatz
-  const focusType = selectedPlan ?? village.buildings.find((b) => b.id === selectedBuildingId)?.type ?? null;
-  const focusPlot = focusType ? PLOTS[focusType] : undefined;
-  const focus: Vec3 | null = focusPlot ? [focusPlot.pos[0], focusPlot.y + 1, focusPlot.pos[1]] : null;
+  // Kamera-Ziel: zuletzt ausgewähltes Gebäude, Ruine oder „Zeigen“-Anfrage
+  const [camFocus, setCamFocus] = useState<{ key: string; pos: Vec3 } | null>(null);
+  const selectedType = selectedPlan ?? village.buildings.find((b) => b.id === selectedBuildingId)?.type ?? null;
+  useEffect(() => {
+    const plot = selectedType ? PLOTS[selectedType] : undefined;
+    if (plot) setCamFocus({ key: `sel:${selectedType}:${Date.now()}`, pos: [plot.pos[0], plot.y, plot.pos[1]] });
+  }, [selectedType]);
+  useEffect(() => {
+    const plot = focusRequest ? PLOTS[focusRequest.type] : undefined;
+    if (plot && focusRequest) setCamFocus({ key: `req:${focusRequest.type}:${focusRequest.n}`, pos: [plot.pos[0], plot.y, plot.pos[1]] });
+  }, [focusRequest]);
 
   const portalRef = useRef<HTMLDivElement>(null);
   const homeCount = Math.min(HOME_SLOTS.length, Math.max(2, village.villagers.length));
@@ -219,11 +153,19 @@ export default function VillageScene({
             gl.toneMappingExposure = 1.0;
             if (import.meta.env.DEV) (window as unknown as { __mwGl?: THREE.WebGLRenderer }).__mwGl = gl;
           }}
-          onPointerMissed={onBackgroundClick}
+          onPointerMissed={tap.background}
         >
           <WorldClock />
-          <CameraRig focus={focus} focusKey={focusType ?? ''} />
-          <PanLimit />
+          <MapCamera
+            home={HOME}
+            distance={{ wide: 30, tall: 40 }}
+            minDistance={17}
+            maxDistance={46}
+            panRadius={21}
+            yRange={[2.5, 11]}
+            focus={camFocus?.pos ?? null}
+            focusKey={camFocus?.key ?? ''}
+          />
           <fog attach="fog" args={[SKY.fog, 80, 320]} />
           <Lights />
 
@@ -263,8 +205,8 @@ export default function VillageScene({
                 def={def}
                 selected={selectedBuildingId === b.id}
                 canAssign={canAssign}
-                onClick={onBuildingClick}
-                onCollect={onCollect}
+                onClick={tap.building}
+                onCollect={tap.collect}
                 justBuilt={isNew(b.id)}
               />
             );
@@ -281,7 +223,7 @@ export default function VillageScene({
                 inventory={village.inventory}
                 highlight={guideType === plan.type}
                 selected={selectedPlan === plan.type}
-                onClick={onPlanClick}
+                onClick={tap.plan}
                 names={names}
               />
             );
@@ -294,7 +236,7 @@ export default function VillageScene({
                 key={b.id}
                 kind={b.type as LandmarkKey}
                 highlight={guideType === b.type}
-                onActivate={b.type === 'researchLab' ? onOpenResearch : onOpenValley}
+                onActivate={b.type === 'researchLab' ? tap.research : tap.valley}
                 justBuilt={isNew(b.id)}
               />
             ))}
@@ -309,7 +251,7 @@ export default function VillageScene({
                 villager={v}
                 plan={plan}
                 selected={selectedVillagerId === v.id}
-                onSelect={onSelectVillager}
+                onSelect={tap.villager}
               />
             );
           })}

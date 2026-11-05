@@ -420,7 +420,7 @@ export function Villager3D({
       </group>
 
       {/* Html bleibt immer eingehängt: Ein- und Aushängen löst sonst React-Warnungen aus. */}
-      <Html portal={portal} position={[0, 1.85, 0]} center distanceFactor={13} zIndexRange={[40, 0]}>
+      <Html portal={portal} position={[0, 1.85, 0]} center distanceFactor={10} zIndexRange={[40, 0]}>
         {(bubble || selected) && (
           <div className={`scene-bubble ${selected ? 'is-selected' : ''}`}>
             {bubble && <span className="text-base leading-none">{bubble}</span>}

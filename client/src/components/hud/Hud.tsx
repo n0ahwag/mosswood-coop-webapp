@@ -95,7 +95,7 @@ export function ResourcePanel() {
 
 // ---------- Hofbuch mit nächstem Schritt ----------
 
-export function QuestTracker({ step, scene }: { step: GuideStep | null; scene: Scene }) {
+export function QuestTracker({ step, scene, onShow }: { step: GuideStep | null; scene: Scene; onShow?: () => void }) {
   const { village, content } = useGame();
   if (!village) return null;
   const { quest, step: index, total } = village.progression;
@@ -147,7 +147,16 @@ export function QuestTracker({ step, scene }: { step: GuideStep | null; scene: S
         {step && (
           <div className="mt-2.5 flex gap-2 rounded-xl border-2 border-gold-400 bg-gold-200/70 px-2.5 py-2">
             <span className="animate-bob text-lg" aria-hidden>👉</span>
-            <p className="text-sm leading-snug font-bold text-bark-900">{step.text}</p>
+            <p className="flex-1 text-sm leading-snug font-bold text-bark-900">{step.text}</p>
+            {onShow && (
+              <button
+                className="btn-wood shrink-0 self-start px-2 py-1 text-xs"
+                onClick={onShow}
+                title="Ansicht zum Ziel schieben"
+              >
+                📍 Zeigen
+              </button>
+            )}
           </div>
         )}
 
