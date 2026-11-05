@@ -4,11 +4,13 @@
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import { HtmlPortalContext } from './htmlPortal';
+import { HtmlPortalContext, useHudOffset } from './htmlPortal';
 import * as THREE from 'three';
 import type { GameContent, VillageState } from '../lib/types';
 import { BuildingPlot, DiningTable, Homes } from './Buildings';
 import { ConstructionSite } from './ConstructionSite';
+import { Beacon, Landmark } from './Landmarks';
+import type { LandmarkKey } from './layout';
 import { Effects } from './Effects';
 import {
   HOME_SLOTS, homeSpot, plazaSpot, PLOTS, TABLE_POS, tableSpot, workSpot,
@@ -29,7 +31,17 @@ export interface VillageSceneProps {
   onBuildingClick: (id: string) => void;
   onCollect: (id: string) => void;
   onBackgroundClick: () => void;
+  /** Wohin der goldene Wegweiser zeigt (Gebäudetyp oder Wahrzeichen). */
+  guide?: { kind: 'building'; type: string } | { kind: 'landmark'; key: LandmarkKey } | null;
+  researchUnlocked?: boolean;
+  valleyUnlocked?: boolean;
+  researchHint?: string;
+  valleyHint?: string;
+  onOpenResearch?: () => void;
+  onOpenValley?: () => void;
 }
+
+const noop = () => {};
 
 function AdaptiveCamera() {
   const { camera, size } = useThree();
@@ -38,17 +50,22 @@ function AdaptiveCamera() {
   useEffect(() => {
     if (!aspectStep) return;
     const aspect = aspectStep / 10;
-    const dist = aspect < 1.25 ? Math.min(2.1, Math.max(1, 1.3 / aspect)) : 1;
+    // Vollbild: etwas weiter weg, damit die ganze Insel samt Bahnhof und Turm ins Bild passt.
+    const dist = aspect < 1.25 ? Math.min(2.8, Math.max(1.45, 1.85 / aspect)) : 1.45;
     camera.position.set(14 * dist, 15 * dist, 17.5 * dist);
     camera.lookAt(0, 0, 1);
   }, [aspectStep, camera]);
+  useHudOffset();
   return null;
 }
 
 export default function VillageScene({
   active = true, village, content, selectedVillagerId, selectedBuildingId,
   onSelectVillager, onBuildingClick, onCollect, onBackgroundClick,
+  guide, researchUnlocked = false, valleyUnlocked = false, researchHint = '', valleyHint = '',
+  onOpenResearch = noop, onOpenValley = noop,
 }: VillageSceneProps) {
+  const guidePlot = guide ? PLOTS[guide.kind === 'building' ? guide.type : guide.key] : undefined;
   const plans = useMemo(() => {
     const byId = new Map(village.buildings.map((b) => [b.id, b]));
     const out = new Map<string, VillagerPlan>();
@@ -134,7 +151,7 @@ export default function VillageScene({
         enableDamping
         dampingFactor={0.08}
         minDistance={12}
-        maxDistance={60}
+        maxDistance={80}
         minPolarAngle={0.42}
         maxPolarAngle={1.2}
         target={[0, 0, 1]}
@@ -204,6 +221,22 @@ export default function VillageScene({
           />
         );
       })}
+
+      <Landmark
+        kind="researchLab"
+        locked={!researchUnlocked}
+        lockedHint={researchHint}
+        highlight={guide?.kind === 'landmark' && guide.key === 'researchLab'}
+        onActivate={onOpenResearch}
+      />
+      <Landmark
+        kind="trainStation"
+        locked={!valleyUnlocked}
+        lockedHint={valleyHint}
+        highlight={guide?.kind === 'landmark' && guide.key === 'trainStation'}
+        onActivate={onOpenValley}
+      />
+      {guidePlot && <Beacon position={guidePlot.pos} height={guidePlot.labelHeight + 1.4} />}
 
       <Effects buildings={village.buildings} />
     </Canvas>

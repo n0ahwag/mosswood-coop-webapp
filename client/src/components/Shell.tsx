@@ -112,7 +112,7 @@ export function Shell() {
       <main className="mt-5 flex-1">
         {/* Das Dorf bleibt eingehängt, damit die 3D-Szene beim Tab-Wechsel nicht neu aufgebaut wird. */}
         <div hidden={tab !== 'village'}>
-          <HomeVillage visible={tab === 'village'} />
+          <HomeVillage visible={tab === 'village'} mode="cards" />
         </div>
         {tab === 'valley' && (isLocked('valley') ? lockedView('valley') : <ValleyView />)}
         {tab === 'research' && (isLocked('research') ? lockedView('research') : <ResearchPanel />)}

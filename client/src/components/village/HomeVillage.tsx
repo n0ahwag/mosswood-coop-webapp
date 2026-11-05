@@ -50,12 +50,13 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
   }
 }
 
-export function HomeVillage({ visible = true }: { visible?: boolean }) {
+/** mode="cards": reine Listenansicht ohne 3D (Fallback und „Liste“-Popup im Vollbildspiel). */
+export function HomeVillage({ visible = true, mode = 'auto' }: { visible?: boolean; mode?: 'auto' | 'cards' }) {
   const { village, content, actions } = useGame();
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [plazaHover, setPlazaHover] = useState(false);
-  const webgl = useMemo(hasWebGL, []);
+  const webgl = useMemo(() => mode === 'auto' && hasWebGL(), [mode]);
   const [view, setViewState] = useState<View>(() => (webgl ? readView() : 'cards'));
   const [sceneMounted, setSceneMounted] = useState(view === '3d');
 

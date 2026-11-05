@@ -33,7 +33,7 @@ Fünf bis acht Spieler teilen sich ein Tal. Jeder bewirtschaftet seinen eigenen 
 | 🏞️ **Tal** | Gemeinsame Monumente (Moosbrücke, Große Bibliothek, Laternenfest) mit Echtzeit-Fortschritt, Ereignis-Feed, Online-Status der Nachbarn |
 | ⛵ **Handelsschiff** | Kommt in festen Abständen, verlangt drei Warenkisten vom ganzen Tal und belohnt alle Helfenden mit Siegeln und Prestige |
 | 📜 **Forschung** | Hof-Techniken (Tempo, Lager, Schubkarren, neue Hütten) und Tal-Techniken, von denen alle Nachbarn profitieren |
-| 📱 **UI** | Mobile-first, Tailwind CSS v4, eigene warme Mosswood-Farbpalette |
+| 📱 **UI** | Vollbild-3D für Dorf und Tal mit schwebendem HUD (Hofbuch mit „nächstem Schritt“ und goldenem Wegweiser, Vorrat rechts, Bewohnerleiste unten). Der **Bahnhof** fährt ins Tal, der **Forschungsturm** öffnet das Forschungsbuch als Popup. Ohne WebGL gibt es eine klassische Listenansicht. |
 
 ## Tech-Stack
 

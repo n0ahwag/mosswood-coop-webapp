@@ -27,7 +27,13 @@ export const PLOTS: Record<string, Plot> = {
   brickKiln: { pos: [5, -2.5], work: 1.9, radius: 2.2, labelHeight: 3.6 },
   weavery: { pos: [4.5, 4], work: 1.9, radius: 2.3, labelHeight: 4 },
   kitchen: { pos: [-4, 3], work: 1.9, radius: 2.3, labelHeight: 4.1 },
+  // Wahrzeichen ohne Arbeiter: Forschungsturm und Bahnhof (Fahrt ins Tal)
+  researchLab: { pos: [-11.5, 0.5], work: 1.8, radius: 2.1, labelHeight: 5.5 },
+  trainStation: { pos: [-7.8, -11.4], work: 0, radius: 2.4, labelHeight: 3.8 },
 };
+
+export const LANDMARKS = ['researchLab', 'trainStation'] as const;
+export type LandmarkKey = (typeof LANDMARKS)[number];
 
 export const HOME_SLOTS: Vec2[] = [
   [-2.4, -8],
