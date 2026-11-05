@@ -106,10 +106,10 @@ interface PaintOptions {
 }
 
 // Mittlere Helligkeit der hellen Muster-Texturen (sRGB). Das Material färbt sie ein.
-const TARGET_MEAN = 0.93;
+const TARGET_MEAN = 0.84;
 
 function paint(size: number, shader: Shader, normalStrength: number, tile: number, opts: PaintOptions = {}): TexturePair {
-  const { normalize = true, contrast = 0.7 } = opts;
+  const { normalize = true, contrast = 0.85 } = opts;
   const color = document.createElement('canvas');
   color.width = color.height = size;
   const cctx = color.getContext('2d')!;

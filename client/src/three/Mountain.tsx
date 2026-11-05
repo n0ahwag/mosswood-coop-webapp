@@ -20,17 +20,17 @@ const col = (hex: string) => new THREE.Color(hex);
 const TERRAIN_SIZE = 66;
 
 const PALETTE = {
-  grassA: col('#7ec24a'),
-  grassB: col('#b2e05e'),
-  grassDry: col('#d6dc78'),
-  moss: col('#79b848'),
-  dirt: col('#d2a56f'),
-  path: col('#f4dfae'),
-  pathDark: col('#e3c48f'),
-  rockA: col('#e4c79e'),
-  rockB: col('#c9a57b'),
-  rockWarm: col('#ecb987'),
-  low: col('#b9cde0'),
+  grassA: col('#68ad38'),
+  grassB: col('#97cb48'),
+  grassDry: col('#bfc462'),
+  moss: col('#5a9a36'),
+  dirt: col('#b88856'),
+  path: col('#e4c890'),
+  pathDark: col('#caa771'),
+  rockA: col('#cba57a'),
+  rockB: col('#a98562'),
+  rockWarm: col('#d59b6a'),
+  low: col('#9aafc4'),
 };
 
 function buildTerrainGeometry(seg: number) {
@@ -96,7 +96,7 @@ function buildTerrainGeometry(seg: number) {
       // Umgebungsverdeckung aus der Krümmung: Mulden dunkler, Kanten heller
       const avg = (hAt(r - k, q) + hAt(r + k, q) + hAt(r, q - k) + hAt(r, q + k)) / 4;
       const cav = avg - y;
-      const ao = 1 - Math.min(0.2, Math.max(0, cav) * 0.18) + Math.min(0.06, Math.max(0, -cav) * 0.05);
+      const ao = 1 - Math.min(0.28, Math.max(0, cav) * 0.22) + Math.min(0.06, Math.max(0, -cav) * 0.05);
       c.multiplyScalar(ao);
 
       colors[i * 3] = c.r;
@@ -118,7 +118,7 @@ export function makeTerrainMaterial(cloudFade = true) {
     shader.uniforms.uGrassN = { value: grass.normal };
     shader.uniforms.uRock = { value: rock.map };
     shader.uniforms.uRockN = { value: rock.normal };
-    shader.uniforms.uCloud = { value: new THREE.Color('#f5f8fc') };
+    shader.uniforms.uCloud = { value: new THREE.Color('#edf1f6') };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
       .replace(
@@ -146,7 +146,7 @@ vec3 triW() { vec3 b = pow(abs(normalize(vWNrm)), vec3(6.0)); return b / (b.x + 
   vec3 ry = texture2D(uRock, vWPos.xz / 4.0).rgb;
   vec3 rz = texture2D(uRock, vWPos.xy / 4.0).rgb;
   vec3 rk = rx * bw.x + ry * bw.y + rz * bw.z;
-  diffuseColor.rgb *= mix(rk, g, grassy) * 1.2;
+  diffuseColor.rgb *= mix(rk, g, grassy) * 1.15;
 }`,
       )
       .replace(

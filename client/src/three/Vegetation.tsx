@@ -97,7 +97,7 @@ function pineGeometry() {
     return planarUv(g, 1.1);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#3f8a45', '#a2d466', 0.4, 3.2);
+  return paintGradient(merged, '#357a3b', '#86bf55', 0.4, 3.2);
 }
 
 /** Laubbaum-Krone: mehrere verschmolzene, buckelige Kugeln. Mittelpunkt bei y = 0. */
@@ -116,15 +116,15 @@ function crownGeometry() {
     return planarUv(g, 1.2);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#5aa03a', '#cdf07c', -0.8, 1.2);
+  return paintGradient(merged, '#4c8f31', '#afdc66', -0.8, 1.2);
 }
 
 /** Grasbüschel aus sieben gebogenen Halmen. Fuß bei y = 0, Höhe 1. */
 function tuftGeometry() {
   const positions: number[] = [];
   const colors: number[] = [];
-  const base = new THREE.Color('#6aa83a');
-  const tip = new THREE.Color('#dcf38e');
+  const base = new THREE.Color('#5a9632');
+  const tip = new THREE.Color('#c4e37a');
   const rng = mulberry32(77);
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2 + rng();
@@ -392,7 +392,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
       <instancedMesh ref={grassRef} args={[tuft, grassMat, items.grass.length]} receiveShadow />
       <instancedMesh ref={flowerRef} args={[undefined, undefined, items.flowers.length]}>
         <icosahedronGeometry args={[0.07, 1]} />
-        <meshStandardMaterial roughness={0.6} emissive="#ffffff" emissiveIntensity={0.15} />
+        <meshStandardMaterial roughness={0.6} emissive="#ffffff" emissiveIntensity={0.08} />
       </instancedMesh>
       <instancedMesh ref={bushRef} args={[crownGeo, leafMat, items.bushes.length]} castShadow receiveShadow />
     </group>

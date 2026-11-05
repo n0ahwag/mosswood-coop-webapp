@@ -593,7 +593,7 @@ export default function ValleyScene({
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.2;
+            gl.toneMappingExposure = 1.0;
           }}
           onPointerMissed={() => onSelect(null)}
         >

@@ -216,7 +216,7 @@ export default function VillageScene({
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.15;
+            gl.toneMappingExposure = 1.0;
             if (import.meta.env.DEV) (window as unknown as { __mwGl?: THREE.WebGLRenderer }).__mwGl = gl;
           }}
           onPointerMissed={onBackgroundClick}
