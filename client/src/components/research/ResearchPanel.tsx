@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGame } from '../../game/GameProvider';
 import { featureUnlock, hasFeature } from '../../game/progression';
 import type { TechDef } from '../../lib/types';
-import { ResourceIcon } from '../icons/ResourceIcon';
+import { CostChips } from '../ui';
 
 export function ResearchPanel() {
   const { content, village, actions } = useGame();
@@ -46,8 +46,7 @@ export function ResearchPanel() {
           </div>
           {g.scope === 'valley' && !hasFeature(village, 'valleyResearch') ? (
             <p className="slot px-4 py-3 text-sm font-bold text-bark-600">
-              🔒 Tal-Forschung wird mit Aufgabe {featureUnlock(content, 'valleyResearch').index + 1} im Hofbuch frei
-              („{featureUnlock(content, 'valleyResearch').quest?.title}“).
+              🔒 Tal-Forschung: {featureUnlock(content, 'valleyResearch').text}
             </p>
           ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -74,21 +73,7 @@ export function ResearchPanel() {
                   )}
                   {!done && (
                     <footer className="mt-auto flex items-center justify-between gap-2 pt-2">
-                      <span className="flex flex-wrap gap-1">
-                        {Object.entries(t.cost).map(([r, n]) => {
-                          const have = village.inventory[r] ?? 0;
-                          return (
-                            <span
-                              key={r}
-                              title={content.resources[r]?.name}
-                              className={`chip gap-0.5 ${have >= n ? 'bg-moss-100 text-moss-800' : 'bg-clay-200 text-clay-500'}`}
-                            >
-                              <ResourceIcon resource={r} size={18} />
-                              {Math.min(have, n)}/{n}
-                            </span>
-                          );
-                        })}
-                      </span>
+                      <CostChips cost={t.cost} inventory={village.inventory} />
                       <button
                         className="btn-primary px-3 py-1.5 text-sm"
                         disabled={!canBuy || busy === t.key}

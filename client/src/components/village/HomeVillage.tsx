@@ -5,6 +5,7 @@ import { useGame } from '../../game/GameProvider';
 import { fx } from '../../lib/fx';
 import type { BuildingDef } from '../../lib/types';
 import { QuestPanel } from '../QuestPanel';
+import { BuildPlanCard } from './BuildPlanCard';
 import { BuildingCard } from './BuildingCard';
 import { InventoryBar } from './InventoryBar';
 import { VILLAGER_MIME, VillagerCard } from './VillagerCard';
@@ -305,31 +306,32 @@ export function HomeVillage({ visible = true, mode = 'auto' }: { visible?: boole
               </section>
             );
           })}
-          {village.progression.locked.length > 0 && (
-            <section>
-              <div className="mb-2 flex items-baseline gap-2">
-                <h3 className="text-lg font-semibold">Bauplätze</h3>
-                <span className="text-sm text-bark-500">Werden nach und nach über das Hofbuch frei</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                {village.progression.locked.map((l) => {
-                  const def = content.buildings[l.type];
-                  const next = l.questIndex === village.progression.step;
-                  return (
-                    <div key={l.type} className={`slot p-3 text-center ${next ? 'ring-4 ring-gold-300' : 'opacity-75'}`}>
-                      <div className="text-2xl grayscale-[60%]" aria-hidden>{def?.icon}</div>
-                      <div className="font-display font-semibold">🔒 {def?.name}</div>
-                      <div className="text-[11px] font-bold text-bark-500">
-                        {next ? 'Als Nächstes' : `Aufgabe ${l.questIndex + 1}`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          <BuildSection />
         </>
       )}
     </div>
+  );
+}
+
+/** Alle Bauplätze: zuerst was man jetzt bauen kann, dann was als Nächstes kommt. */
+export function BuildSection({ onBuilt }: { onBuilt?: (buildingId: string, type: string) => void }) {
+  const { village } = useGame();
+  if (!village || village.progression.plans.length === 0) return null;
+  const quest = village.progression.quest;
+  const questTargets = new Set(quest?.goal.type === 'build' ? quest.goal.buildings : []);
+  const order = (p: { affordable: boolean; available: boolean }) => (p.affordable ? 0 : p.available ? 1 : 2);
+  const plans = [...village.progression.plans].sort((a, b) => order(a) - order(b));
+  return (
+    <section>
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
+        <h3 className="text-lg font-semibold">🔨 Bauplätze</h3>
+        <span className="text-sm text-bark-500">Neue Gebäude baust du mit Rohstoffen aus deinem Lager</span>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {plans.map((p) => (
+          <BuildPlanCard key={p.type} plan={p} highlight={questTargets.has(p.type)} onBuilt={onBuilt} compact={!p.available} />
+        ))}
+      </div>
+    </section>
   );
 }

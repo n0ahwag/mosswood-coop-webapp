@@ -5,6 +5,7 @@ import type { Inventory } from './types';
 export type FxEvent =
   | { type: 'collect'; buildingId: string; moved: Inventory }
   | { type: 'assign'; villagerId: string; buildingId: string | null }
+  | { type: 'built'; buildingType: string }
   | { type: 'screen'; x: number; y: number; label?: string; tone?: 'gold' | 'green'; resource?: string; sparks?: boolean };
 
 const bus = new EventTarget();

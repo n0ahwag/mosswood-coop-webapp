@@ -9,13 +9,19 @@ export interface ResourceDef {
 export interface BuildingDef {
   name: string;
   icon: string;
-  category: 'gathering' | 'refining' | 'food';
+  category: 'gathering' | 'refining' | 'food' | 'landmark';
   description: string;
   inputs: Inventory;
   outputs: Inventory;
   durationSec: number;
   slots: number;
   stockCap: number;
+  /** Baukosten aus dem Lager */
+  cost: Inventory;
+  /** Gebäude, die vorher stehen müssen */
+  requires: string[];
+  /** Wahrzeichen öffnen einen Bereich */
+  feature?: FeatureKey;
 }
 
 export interface TechDef {
@@ -42,8 +48,24 @@ export interface QuestDef {
   icon: string;
   title: string;
   text: string;
-  goal: { type: 'assign' | 'collect' | 'research' | 'contribute' | 'shipLoad'; amount: number; resource?: string; building?: string };
-  reward: { buildings?: string[]; features?: FeatureKey[]; resources?: Inventory };
+  goal: {
+    type: 'assign' | 'collect' | 'build' | 'research' | 'contribute' | 'shipLoad';
+    amount: number;
+    resource?: string;
+    building?: string;
+    buildings?: string[];
+  };
+  reward: { features?: FeatureKey[]; resources?: Inventory };
+}
+
+export interface BuildPlan {
+  type: string;
+  cost: Inventory;
+  requires: string[];
+  /** Voraussetzungen, die noch fehlen */
+  missing: string[];
+  available: boolean;
+  affordable: boolean;
 }
 
 export interface GameContent {
@@ -60,8 +82,8 @@ export interface Progression {
   total: number;
   quest: (QuestDef & { progress: number }) | null;
   features: FeatureKey[];
-  unlockedBuildings: string[];
-  locked: { type: string; questIndex: number; questTitle: string }[];
+  /** Gebäude, die noch nicht stehen */
+  plans: BuildPlan[];
 }
 
 export type VillagerState = 'IDLE' | 'WORKING' | 'HUNGRY' | 'EATING' | 'TIRED' | 'RESTING';

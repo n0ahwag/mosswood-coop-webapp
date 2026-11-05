@@ -52,8 +52,7 @@ export function ValleyView() {
           <section className="card flex items-center gap-3 p-4 text-sm">
             <span className="text-3xl opacity-70" aria-hidden>⛵</span>
             <p className="font-semibold text-bark-600">
-              Am Hafen legt ab und zu ein Handelsschiff an. Beladen kannst du es ab Aufgabe{' '}
-              {featureUnlock(content, 'ship').index + 1} im Hofbuch („{featureUnlock(content, 'ship').quest?.title}“).
+              Am Hafen legt ab und zu ein Handelsschiff an. Beladen: {featureUnlock(content, 'ship').text}
             </p>
           </section>
         )}

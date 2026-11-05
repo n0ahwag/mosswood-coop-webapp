@@ -65,6 +65,26 @@ export function ResourceList({
   );
 }
 
+/** Kosten als Chips „Haben/Brauchen“: grün, wenn genug im Lager ist, sonst rot. */
+export function CostChips({ cost, inventory, size = 18 }: { cost: Inventory; inventory: Inventory; size?: number }) {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {Object.entries(cost).map(([r, n]) => {
+        const have = inventory[r] ?? 0;
+        return (
+          <span
+            key={r}
+            className={`chip gap-0.5 tabular-nums ${have >= n ? 'bg-moss-100 text-moss-800' : 'bg-clay-200 text-clay-500'}`}
+          >
+            <ResourceIcon resource={r} size={size} />
+            {Math.min(have, n)}/{n}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 export function useNow(intervalMs = 1000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {

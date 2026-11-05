@@ -5,6 +5,7 @@ import { fx } from '../lib/fx';
 import type { Building, Inventory } from '../lib/types';
 import { PLOTS } from './layout';
 import { C } from './palette';
+import { softDotTexture } from './textures';
 
 interface Burst {
   id: number;
@@ -57,8 +58,42 @@ function Sparkles({ origin, onDone }: { origin: [number, number, number]; onDone
   );
 }
 
+/** Staubwolke beim Bauen: weiche Bälle, die nach außen quellen und verblassen. */
+function Dust({ origin, onDone }: { origin: [number, number, number]; onDone: () => void }) {
+  const refs = useRef<(THREE.Sprite | null)[]>([]);
+  const age = useRef(0);
+  const map = softDotTexture();
+  const dirs = useMemo(() => Array.from({ length: 14 }, (_, i) => {
+    const a = (i / 14) * Math.PI * 2;
+    return new THREE.Vector3(Math.cos(a), 0.15 + Math.random() * 0.35, Math.sin(a));
+  }), []);
+  useFrame((_, dt) => {
+    age.current += dt;
+    const k = age.current / 1.4;
+    refs.current.forEach((s, i) => {
+      if (!s) return;
+      const d = dirs[i];
+      const r = 0.6 + Math.sqrt(k) * 2.4;
+      s.position.set(origin[0] + d.x * r, origin[1] - 0.4 + d.y * r, origin[2] + d.z * r);
+      s.scale.setScalar(0.8 + k * 1.8);
+      (s.material as THREE.SpriteMaterial).opacity = Math.max(0, 0.75 * (1 - k));
+    });
+    if (k >= 1) onDone();
+  });
+  return (
+    <>
+      {dirs.map((_, i) => (
+        <sprite key={i} ref={(s) => { refs.current[i] = s; }}>
+          <spriteMaterial map={map} color="#e8d9bd" transparent depthWrite={false} />
+        </sprite>
+      ))}
+    </>
+  );
+}
+
 export function Effects({ buildings }: { buildings: Building[] }) {
   const [bursts, setBursts] = useState<Burst[]>([]);
+  const [dust, setDust] = useState<{ id: number; pos: [number, number, number] }[]>([]);
   const byId = useRef(new Map<string, Building>());
   byId.current = new Map(buildings.map((b) => [b.id, b]));
   const { camera, gl } = useThree();
@@ -66,11 +101,19 @@ export function Effects({ buildings }: { buildings: Building[] }) {
   useEffect(
     () =>
       fx.on((e) => {
+        if (e.type === 'built') {
+          const plot = PLOTS[e.buildingType];
+          if (!plot) return;
+          const pos: [number, number, number] = [plot.pos[0], plot.y + 0.6, plot.pos[1]];
+          setBursts((list) => [...list, { id: Date.now() + Math.random(), pos, moved: {} }, { id: Date.now() + Math.random() + 1, pos: [pos[0], pos[1] + 1.2, pos[2]], moved: {} }]);
+          setDust((list) => [...list, { id: Date.now() + Math.random(), pos }]);
+          return;
+        }
         if (e.type !== 'collect') return;
         const b = byId.current.get(e.buildingId);
         const plot = b && PLOTS[b.type];
         if (!plot) return;
-        const pos: [number, number, number] = [plot.pos[0], 1.6, plot.pos[1]];
+        const pos: [number, number, number] = [plot.pos[0], plot.y + 1.6, plot.pos[1]];
         setBursts((list) => [...list, { id: Date.now() + Math.random(), pos, moved: e.moved }]);
 
         // schwebende „+N“-Anzeige im Bildschirm-Overlay statt eines eigenen Html-Elements
@@ -97,6 +140,9 @@ export function Effects({ buildings }: { buildings: Building[] }) {
     <>
       {bursts.map((b) => (
         <Sparkles key={b.id} origin={b.pos} onDone={() => remove(b.id)} />
+      ))}
+      {dust.map((d) => (
+        <Dust key={d.id} origin={d.pos} onDone={() => setDust((list) => list.filter((x) => x.id !== d.id))} />
       ))}
     </>
   );

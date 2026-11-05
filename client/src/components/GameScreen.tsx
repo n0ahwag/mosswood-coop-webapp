@@ -17,7 +17,8 @@ import { ProjectCard } from './valley/ProjectCard';
 import { TradeShipCard } from './valley/TradeShipCard';
 import { ValleyView } from './valley/ValleyView';
 import { BuildingCard } from './village/BuildingCard';
-import { HomeVillage } from './village/HomeVillage';
+import { BuildPlanCard } from './village/BuildPlanCard';
+import { BuildSection, HomeVillage } from './village/HomeVillage';
 
 const VillageScene = lazy(() => import('../three/VillageScene'));
 const ValleyScene = lazy(() => import('../three/ValleyScene'));
@@ -46,16 +47,15 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
   const { village, valley, content, me, actions, notify } = useGame();
   const [scene, setScene] = useState<Scene>('village');
   const [valleyMounted, setValleyMounted] = useState(false);
-  const [modal, setModal] = useState<'research' | 'list' | null>(null);
+  const [modal, setModal] = useState<'research' | 'list' | 'build' | null>(null);
   const [travel, setTravel] = useState<Scene | null>(null);
   const [selectedVillager, setSelectedVillager] = useState<string | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [valleySel, setValleySel] = useState<ValleySelection>(null);
 
   const researchOpen = hasFeature(village, 'research');
   const valleyOpen = hasFeature(village, 'valley');
-  const researchHint = `Ab Aufgabe ${featureUnlock(content, 'research').index + 1}`;
-  const valleyHint = `Ab Aufgabe ${featureUnlock(content, 'valley').index + 1}`;
 
   const villagerName = village?.villagers.find((v) => v.id === selectedVillager)?.name ?? null;
   const step = useMemo(
@@ -71,6 +71,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
       if (to === 'valley') setValleyMounted(true);
       setSelectedBuilding(null);
       setSelectedVillager(null);
+      setSelectedPlan(null);
       setValleySel(null);
     }, 600);
     setTimeout(() => setTravel(null), 1500);
@@ -93,16 +94,26 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
     const b = village.buildings.find((x) => x.id === id);
     const def = b && content.buildings[b.type];
     const v = village.villagers.find((x) => x.id === selectedVillager);
+    setSelectedPlan(null);
     if (v && b && def && v.buildingId !== id && b.workerIds.length < def.slots) assign(v.id, id);
     else setSelectedBuilding((cur) => (cur === id ? null : id));
   };
+  const onPlanClick = (type: string) => {
+    sound.play('tap');
+    setSelectedBuilding(null);
+    setSelectedVillager(null);
+    setSelectedPlan((cur) => (cur === type ? null : type));
+  };
   const focused = village.buildings.find((b) => b.id === selectedBuilding);
+  const focusedPlan = village.progression.plans.find((p) => p.type === selectedPlan);
   const villagerById = new Map(village.villagers.map((v) => [v.id, v]));
+  const affordableCount = village.progression.plans.filter((p) => p.affordable).length;
 
+  // Gesperrte Wahrzeichen: statt einer Fehlermeldung gleich den Bauplatz zeigen.
   const openResearch = () => {
     if (!researchOpen) {
-      sound.play('error');
-      notify(`Der Forschungsturm öffnet mit Aufgabe ${featureUnlock(content, 'research').index + 1} im Hofbuch.`, 'error');
+      notify(featureUnlock(content, 'research').text, 'error');
+      onPlanClick('researchLab');
       return;
     }
     sound.play('chime');
@@ -110,8 +121,8 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
   };
   const openValley = () => {
     if (!valleyOpen) {
-      sound.play('error');
-      notify(`Die Bahn fährt ab Aufgabe ${featureUnlock(content, 'valley').index + 1} („${featureUnlock(content, 'valley').quest?.title}“) ins Tal.`, 'error');
+      notify(`Die Bahn fährt erst, wenn der Bahnhof steht. ${featureUnlock(content, 'valley').text}`, 'error');
+      onPlanClick('trainStation');
       return;
     }
     goTo('valley');
@@ -145,12 +156,11 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
               onBackgroundClick={() => {
                 setSelectedVillager(null);
                 setSelectedBuilding(null);
+                setSelectedPlan(null);
               }}
               guide={villageGuide}
-              researchUnlocked={researchOpen}
-              valleyUnlocked={valleyOpen}
-              researchHint={researchHint}
-              valleyHint={valleyHint}
+              selectedPlan={selectedPlan}
+              onPlanClick={onPlanClick}
               onOpenResearch={openResearch}
               onOpenValley={openValley}
             />
@@ -166,7 +176,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
                 active={scene === 'valley'}
                 projects={valley.projects}
                 ship={hasFeature(village, 'ship') ? valley.ship : null}
-                shipLockedHint={hasFeature(village, 'ship') ? undefined : `Ab Aufgabe ${featureUnlock(content, 'ship').index + 1}`}
+                shipLockedHint={hasFeature(village, 'ship') ? undefined : featureUnlock(content, 'ship').short}
                 members={valley.members}
                 meId={me.id}
                 selection={valleySel}
@@ -204,12 +214,41 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
               />
             </Sheet>
           )}
+          {focusedPlan && !focused && (
+            <Sheet title={`Bauplatz ${content.buildings[focusedPlan.type]?.name ?? ''}`} onClose={() => setSelectedPlan(null)}>
+              <BuildPlanCard
+                plan={focusedPlan}
+                highlight
+                onBuilt={(id) => {
+                  setSelectedPlan(null);
+                  // Wahrzeichen haben kein Arbeiter-Panel.
+                  if (content.buildings[focusedPlan.type]?.category !== 'landmark') setSelectedBuilding(id);
+                }}
+              />
+            </Sheet>
+          )}
           <VillagerDock
             selectedId={selectedVillager}
             onSelect={(id) => setSelectedVillager((s) => (s === id ? null : id))}
             buildingName={(b) => (b ? content.buildings[b.type]?.name ?? '' : '')}
           />
           <div className="pointer-events-auto absolute right-2 bottom-24 z-20 flex flex-col gap-2 sm:right-3 sm:bottom-3">
+            {village.progression.plans.length > 0 && (
+              <button
+                className={`relative px-3 py-1.5 text-sm ${affordableCount ? 'btn-honey' : 'btn-wood'}`}
+                onClick={() => {
+                  sound.play('tap');
+                  setModal('build');
+                }}
+              >
+                🔨 Bauen
+                {affordableCount > 0 && (
+                  <span className="absolute -top-2 -right-2 grid size-5 animate-bob place-items-center rounded-full bg-moss-500 text-[11px] font-bold text-white shadow">
+                    {affordableCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button className={researchOpen ? 'btn-wood px-3 py-1.5 text-sm' : 'btn-ghost px-3 py-1.5 text-sm opacity-80'} onClick={openResearch}>
               🔭 Forschung{!researchOpen && ' 🔒'}
             </button>
@@ -233,8 +272,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
                 <TradeShipCard ship={valley.ship} />
               ) : (
                 <div className="card p-4 text-sm font-semibold text-bark-600">
-                  ⛵ Beladen kannst du das Handelsschiff ab Aufgabe {featureUnlock(content, 'ship').index + 1} im Hofbuch
-                  („{featureUnlock(content, 'ship').quest?.title}“).
+                  ⛵ Das Handelsschiff beladen: {featureUnlock(content, 'ship').text}
                 </div>
               )}
             </Sheet>
@@ -248,6 +286,16 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
       {modal === 'research' && (
         <Modal title="Forschungsbuch" icon="🔭" onClose={() => setModal(null)}>
           <ResearchPanel />
+        </Modal>
+      )}
+      {modal === 'build' && (
+        <Modal title="Bauen" icon="🔨" onClose={() => setModal(null)}>
+          <BuildSection
+            onBuilt={(id, type) => {
+              setModal(null);
+              if (content.buildings[type]?.category !== 'landmark') setSelectedBuilding(id);
+            }}
+          />
         </Modal>
       )}
       {modal === 'list' && (

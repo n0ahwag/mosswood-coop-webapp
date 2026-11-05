@@ -29,6 +29,7 @@ interface GameApi {
   actions: {
     assignVillager: (villagerId: string, buildingId: string | null) => Promise<unknown>;
     collect: (buildingId: string) => Promise<{ moved: Inventory } | undefined>;
+    build: (type: string) => Promise<{ name: string; icon: string; buildingId: string } | undefined>;
     contribute: (projectId: string, resource: string, amount: number) => Promise<{ amount: number; completed: boolean } | undefined>;
     loadShip: (resource: string, amount: number) => Promise<{ amount: number; completed: boolean } | undefined>;
     unlockTech: (techKey: string) => Promise<{ name: string } | undefined>;
@@ -140,6 +141,19 @@ export function GameProvider({
       run(() => emit('villager:assign', { villagerId, buildingId }), 'clack'),
     collect: (buildingId) =>
       run(() => emit<{ moved: Inventory }>('building:collect', { buildingId }), 'pop'),
+    build: (type) =>
+      run(async () => {
+        const res = await emit<{ name: string; icon: string; buildingId: string; feature: string | null }>('building:build', { type });
+        fx.emit({ type: 'built', buildingType: type });
+        notify(
+          res.feature === 'research'
+            ? `${res.icon} ${res.name} gebaut! Tippe ihn an, um zu forschen.`
+            : res.feature === 'valley'
+              ? `${res.icon} ${res.name} gebaut! Die Bahn fährt jetzt ins Tal.`
+              : `${res.icon} ${res.name} gebaut!`,
+        );
+        return res;
+      }, 'build'),
     contribute: (projectId, resource, amount) =>
       run(() => emit<{ amount: number; completed: boolean }>('project:contribute', { projectId, resource, amount }), 'clack'),
     loadShip: (resource, amount) =>
@@ -161,11 +175,11 @@ export function GameProvider({
     lastStep.current = questStep;
     if (prev === null || questStep <= prev) return;
     for (const quest of content.quests.slice(prev, questStep)) {
-      const unlocked = [
-        ...(quest.reward.buildings ?? []).map((b) => content.buildings[b]?.name),
-        ...(quest.reward.features ?? []).map((f) => content.features[f]?.name),
-      ].filter(Boolean);
-      notify(`✔ ${quest.title} geschafft!${unlocked.length ? ` Neu: ${unlocked.join(', ')}` : ''}`);
+      const gifts = [
+        ...(quest.reward.features ?? []).map((f) => `${content.features[f]?.icon} ${content.features[f]?.name}`),
+        ...Object.entries(quest.reward.resources ?? {}).map(([r, n]) => `${n} ${content.resources[r]?.icon ?? ''}`),
+      ];
+      notify(`✔ ${quest.title} geschafft!${gifts.length ? ` Belohnung: ${gifts.join(', ')}` : ''}`);
     }
     sound.play('fanfare');
     fx.emit({ type: 'screen', x: window.innerWidth / 2, y: window.innerHeight * 0.3, label: '🎉 Aufgabe geschafft', tone: 'gold' });

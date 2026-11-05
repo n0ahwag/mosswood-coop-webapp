@@ -20,7 +20,7 @@ type TabId = (typeof TABS)[number]['id'];
 const TAB_FEATURE: Record<TabId, FeatureKey | null> = { village: null, valley: 'valley', research: 'research' };
 const LOCKED_TEXT: Record<'valley' | 'research', string> = {
   valley: 'Hier baut ihr gemeinsam an großen Monumenten und beladet das Handelsschiff. Kümmere dich erst um deinen eigenen Hof.',
-  research: 'Im Forschungsbuch verbesserst du später Werkzeuge, Lager und Hütten. Erst braucht dein Hof ein paar Planken.',
+  research: 'Im Forschungsturm verbesserst du später Werkzeuge, Lager und Hütten. Erst muss der Turm gebaut werden.',
 };
 
 function MuteButton() {
@@ -49,10 +49,9 @@ export function Shell() {
     return !!f && !!village && !hasFeature(village, f);
   };
   const lockedView = (id: 'valley' | 'research') => {
-    const { index, quest } = featureUnlock(content, id);
     const t = TABS.find((x) => x.id === id)!;
     return (
-      <LockedFeature icon={t.icon} title={t.label} questIndex={index} questTitle={quest?.title}>
+      <LockedFeature icon={t.icon} title={t.label} unlockText={featureUnlock(content, id).text}>
         {LOCKED_TEXT[id]}
       </LockedFeature>
     );
@@ -85,7 +84,7 @@ export function Shell() {
               onClick={() => switchTab(t.id)}
               aria-current={tab === t.id ? 'page' : undefined}
               className={tab === t.id ? 'btn-honey px-4 py-1.5' : 'btn-ghost px-4 py-1.5'}
-              title={isLocked(t.id) ? 'Noch gesperrt – siehe Hofbuch' : undefined}
+              title={isLocked(t.id) ? 'Noch gesperrt' : undefined}
             >
               {t.icon} {t.label}{isLocked(t.id) && ' 🔒'}
             </button>

@@ -1,12 +1,14 @@
 import { prisma, Prisma, withRetry } from '../db.js';
 import { config } from '../config.js';
-import { BUILDINGS, FEATURES, QUESTS, VILLAGER_NAMES } from '../game/content.js';
+import {
+  BUILDINGS, FEATURES, QUESTS, RESOURCES, VILLAGER_NAMES,
+} from '../game/content.js';
 import { computeEffects } from '../game/effects.js';
 import {
-  advanceQuests, serializeProgression, unlockQuestIndex, unlocksAt,
+  advanceQuests, featureSource, missingRequirements, recordStat, serializeProgression, unlockedFeatures,
 } from '../game/progression.js';
 import {
-  collectStock, effectiveStorageCap, simulateVillage, tickVillage,
+  collectStock, effectiveStorageCap, simulateVillage, takeResources, tickVillage,
 } from '../game/engine.js';
 import { GameError, pick } from '../utils/errors.js';
 import { withLock } from '../utils/lock.js';
@@ -142,9 +144,8 @@ export function mutateVillage(villageId, fn, { serializable = false } = {}) {
 
           const result = fn ? await fn(snap, { tx }) : undefined;
 
-          // Hofbuch: erfüllte Aufgaben abschließen und freigeschaltete Gebäude bauen.
+          // Hofbuch: erfüllte Aufgaben abschließen und Belohnungen ausgeben.
           const { completed } = advanceQuests(snap);
-          await ensureUnlockedBuildings(tx, snap);
           if (completed.length) snap.completedQuests = completed;
 
           const effects = computeEffects(snap.techKeys);
@@ -161,24 +162,42 @@ export function mutateVillage(villageId, fn, { serializable = false } = {}) {
   );
 }
 
-/** Legt fehlende Gebäude an, die laut Hofbuch schon freigeschaltet sind. */
-export async function ensureUnlockedBuildings(tx, snap) {
-  const have = new Set(snap.buildings.map((b) => b.type));
-  for (const type of unlocksAt(snap.questStep).buildings) {
-    if (have.has(type) || !BUILDINGS[type]) continue;
+/** Wirft einen verständlichen Fehler, wenn ein Bereich noch gesperrt ist. */
+export function requireFeature(snap, feature) {
+  if (unlockedFeatures(snap).has(feature)) return;
+  const source = featureSource(feature);
+  const name = FEATURES[feature]?.name ?? feature;
+  if (source.kind === 'building') {
+    // Beide Wahrzeichen sind maskulin: der Forschungsturm, der Bahnhof.
+    throw new GameError(`${name}: Baue zuerst den ${BUILDINGS[source.type].name}`, 'LOCKED', 403);
+  }
+  throw new GameError(`${name} schaltest du mit der Aufgabe „${QUESTS[source.index]?.title}“ im Hofbuch frei`, 'LOCKED', 403);
+}
+
+/** Baut ein neues Gebäude, wenn Voraussetzungen und Rohstoffe passen. */
+export function buildBuilding(villageId, type) {
+  return mutateVillage(villageId, async (snap, { tx }) => {
+    const def = BUILDINGS[type];
+    if (!def) throw new GameError('Dieses Gebäude gibt es nicht', 'NOT_FOUND', 404);
+    if (snap.buildings.some((b) => b.type === type)) throw new GameError(`${def.name} steht schon`);
+
+    const missing = missingRequirements(snap, type);
+    if (missing.length) {
+      throw new GameError(`Für ${def.name} muss zuerst ${missing.map((m) => BUILDINGS[m].name).join(' und ')} stehen`);
+    }
+    const lacking = Object.entries(def.cost)
+      .filter(([res, n]) => (snap.inventory[res] ?? 0) < n)
+      .map(([res, n]) => `${n - (snap.inventory[res] ?? 0)} ${RESOURCES[res]?.name ?? res}`);
+    if (lacking.length) throw new GameError(`Für ${def.name} fehlen dir noch ${lacking.join(', ')}`);
+
+    takeResources(snap.inventory, def.cost);
     const b = await tx.building.create({ data: { villageId: snap.id, type } });
     snap.buildings.push({
       id: b.id, type: b.type, level: b.level, progress: 0, loaded: false, stock: {}, status: 'idle',
     });
-  }
-}
-
-/** Wirft einen verständlichen Fehler, wenn ein Bereich noch gesperrt ist. */
-export function requireFeature(snap, feature) {
-  if (unlocksAt(snap.questStep).features.has(feature)) return;
-  const index = unlockQuestIndex('feature', feature);
-  const name = FEATURES[feature]?.name ?? feature;
-  throw new GameError(`${name} schaltest du mit der Aufgabe „${QUESTS[index]?.title}“ im Hofbuch frei`, 'LOCKED', 403);
+    recordStat(snap.stats, 'built', 1);
+    return { type, name: def.name, icon: def.icon, buildingId: b.id, feature: def.feature ?? null };
+  });
 }
 
 export async function createVillager(tx, snap) {

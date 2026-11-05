@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Villager } from '../lib/types';
 import { useHtmlPortal } from './htmlPortal';
-import { hashString, type Vec2 } from './layout';
+import {
+  hashString, heightAt, peakAt, planRoute, type RoutePoint, type Vec2,
+} from './layout';
 import { C } from './palette';
 
 export type VillagerMode = 'swing' | 'carry' | 'eat' | 'rest' | 'tired' | 'hungry' | 'idle';
@@ -29,24 +31,6 @@ const BUBBLE: Partial<Record<Villager['state'], string>> = {
   TIRED: '🥱',
   RESTING: '💤',
 };
-
-function buildPath(from: Vec2, to: Vec2): Vec2[] {
-  const rf = Math.hypot(from[0], from[1]);
-  const rt = Math.hypot(to[0], to[1]);
-  const dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
-  if (dist > 3 && rf > 3.4 && rt > 3.4) {
-    const cos = (from[0] * to[0] + from[1] * to[1]) / (rf * rt);
-    if (cos < 0.85) {
-      // über den Dorfplatz laufen, so folgen sie den Wegen
-      return [
-        [(from[0] / rf) * 3.1, (from[1] / rf) * 3.1],
-        [(to[0] / rt) * 3.1, (to[1] / rt) * 3.1],
-        to,
-      ];
-    }
-  }
-  return [to];
-}
 
 function shortestAngle(from: number, to: number) {
   let d = (to - from) % (Math.PI * 2);
@@ -88,14 +72,22 @@ export function Villager3D({
   const carryRef = useRef<THREE.Group>(null);
   const toolRef = useRef<THREE.Group>(null);
 
-  const pos = useRef(new THREE.Vector2(plan.target[0], plan.target[1]));
-  const path = useRef<Vec2[]>([]);
+  const pos = useRef(new THREE.Vector3(plan.target[0], heightAt(plan.target[0], plan.target[1]), plan.target[1]));
+  const path = useRef<RoutePoint[]>([]);
   const heading = useRef(0);
   const walkPhase = useRef(0);
   const targetKey = `${plan.target[0].toFixed(2)}|${plan.target[1].toFixed(2)}`;
 
   useEffect(() => {
-    path.current = buildPath([pos.current.x, pos.current.y], plan.target);
+    const p = pos.current;
+    // Auf einer Brücke oder Treppe erst bis zum Ende laufen, dann neu planen.
+    let keep: RoutePoint[] = [];
+    if (!peakAt(p.x, p.z) && path.current.length) {
+      const landing = path.current.findIndex((r) => r.landing);
+      if (landing >= 0) keep = path.current.slice(0, landing + 1);
+    }
+    const from = keep.length ? keep[keep.length - 1].p : ([p.x, p.y, p.z] as [number, number, number]);
+    path.current = [...keep, ...planRoute(from, plan.target)];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetKey]);
 
@@ -110,22 +102,24 @@ export function Villager3D({
     let desired = heading.current;
     const speed = plan.mode === 'tired' ? look.speed * 0.55 : look.speed;
     if (path.current.length) {
-      const [nx, nz] = path.current[0];
+      const [nx, ny, nz] = path.current[0].p;
       const dx = nx - pos.current.x;
-      const dz = nz - pos.current.y;
-      const d = Math.hypot(dx, dz);
+      const dy = ny - pos.current.y;
+      const dz = nz - pos.current.z;
+      const d = Math.hypot(dx, dy, dz);
       const step = speed * delta;
       if (d <= step) {
-        pos.current.set(nx, nz);
+        pos.current.set(nx, ny, nz);
         path.current.shift();
       } else {
         pos.current.x += (dx / d) * step;
-        pos.current.y += (dz / d) * step;
+        pos.current.y += (dy / d) * step;
+        pos.current.z += (dz / d) * step;
       }
-      desired = Math.atan2(dx, dz);
+      if (Math.hypot(dx, dz) > 0.01) desired = Math.atan2(dx, dz);
       moving = true;
     } else if (plan.look) {
-      desired = Math.atan2(plan.look[0] - pos.current.x, plan.look[1] - pos.current.y);
+      desired = Math.atan2(plan.look[0] - pos.current.x, plan.look[1] - pos.current.z);
     }
 
     // beim Tragen langsam hin und her laufen
@@ -142,7 +136,9 @@ export function Villager3D({
     }
 
     heading.current += shortestAngle(heading.current, desired) * Math.min(1, delta * 8);
-    g.position.set(pos.current.x + ox, 0, pos.current.y + oz);
+    const gy = moving ? pos.current.y : heightAt(pos.current.x + ox, pos.current.z + oz);
+    if (!moving) pos.current.y = gy;
+    g.position.set(pos.current.x + ox, gy, pos.current.z + oz);
     g.rotation.y = heading.current;
 
     const walking = moving || pacing;
@@ -424,7 +420,7 @@ export function Villager3D({
       </group>
 
       {/* Html bleibt immer eingehängt: Ein- und Aushängen löst sonst React-Warnungen aus. */}
-      <Html portal={portal} position={[0, 1.85, 0]} center distanceFactor={9} zIndexRange={[40, 0]}>
+      <Html portal={portal} position={[0, 1.85, 0]} center distanceFactor={13} zIndexRange={[40, 0]}>
         {(bubble || selected) && (
           <div className={`scene-bubble ${selected ? 'is-selected' : ''}`}>
             {bubble && <span className="text-base leading-none">{bubble}</span>}

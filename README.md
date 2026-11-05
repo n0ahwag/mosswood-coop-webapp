@@ -27,13 +27,14 @@ Fünf bis acht Spieler teilen sich ein Tal. Jeder bewirtschaftet seinen eigenen 
 
 | Bereich | Umfang im Prototyp |
 | --- | --- |
-| 🏡 **Heimatdorf** | 10 Arbeitsstätten (6 Rohstoff-, 3 Veredelungs- und eine Versorgungsstätte), Lager mit Kapazitätsgrenze, Gebäude-Vorrat zum Einsammeln |
+| 🏡 **Heimatdorf** | Ein Bergdorf über den Wolken: 10 Arbeitsstätten (6 Rohstoff-, 3 Veredelungs- und eine Versorgungsstätte) und 2 Wahrzeichen auf verschiedenen Gipfeln, verbunden durch Hängebrücken und Felstreppen. Jedes Gebäude wird **mit Rohstoffen gebaut**. Lager mit Kapazitätsgrenze, Gebäude-Vorrat zum Einsammeln |
 | 🧑‍🌾 **Dorfbewohner** | 2 zu Beginn, bis zu 5 über Forschung. Zuweisung per Drag-and-Drop oder Antippen, Zustands-Loop *Arbeiten → Hungern/Ermüden → Essen/Ausruhen → Weiterarbeiten* |
 | ⚙️ **Economy Engine** | Produktions-Timer, Rezepte (Holz → Planken, Lehm → Ziegel, Fasern → Stoff, Beeren + Weizen → Mahlzeiten), Offline-Fortschritt bis 8 h |
 | 🏞️ **Tal** | Gemeinsame Monumente (Moosbrücke, Große Bibliothek, Laternenfest) mit Echtzeit-Fortschritt, Ereignis-Feed, Online-Status der Nachbarn |
 | ⛵ **Handelsschiff** | Kommt in festen Abständen, verlangt drei Warenkisten vom ganzen Tal und belohnt alle Helfenden mit Siegeln und Prestige |
 | 📜 **Forschung** | Hof-Techniken (Tempo, Lager, Schubkarren, neue Hütten) und Tal-Techniken, von denen alle Nachbarn profitieren |
-| 📱 **UI** | Vollbild-3D für Dorf und Tal mit schwebendem HUD (Hofbuch mit „nächstem Schritt“ und goldenem Wegweiser, Vorrat rechts, Bewohnerleiste unten). Der **Bahnhof** fährt ins Tal, der **Forschungsturm** öffnet das Forschungsbuch als Popup. Ohne WebGL gibt es eine klassische Listenansicht. |
+| 📱 **UI** | Vollbild-3D für Dorf und Tal mit schwebendem HUD (Hofbuch mit „nächstem Schritt“ und goldenem Wegweiser, Vorrat rechts, Bewohnerleiste unten, Bau-Menü). Bauplätze zeigen ihre Kosten direkt im Bild. Der **Bahnhof** fährt ins Tal, der **Forschungsturm** öffnet das Forschungsbuch als Popup. Ohne WebGL gibt es eine klassische Listenansicht. |
+| 🎨 **Grafik** | Alle Texturen (Holz, Dachziegel, Stroh, Bruchstein, Pflaster, Putz, Fels, Gras, Laub) werden beim Start prozedural mit Reliefkarten erzeugt, es gibt keine Bilddateien. Gelände mit projizierten Fels- und Grastexturen, Wolkenmeer, Himmelskuppel, Wasserfälle, Wind in Bäumen und Gras, bis zu doppelte Auflösung auf scharfen Bildschirmen |
 
 ## Tech-Stack
 
@@ -196,27 +197,46 @@ Ohne Essen im Lager bleibt ein hungriger Bewohner stehen. Die Küche ist deshalb
 
 ### Das Hofbuch (Fortschritt)
 
-Neue Spieler starten nur mit der **Beerenfarm**, zwei Bewohnern und 12 Beeren. Eine Kette aus 12 Aufgaben bringt das Spiel Schritt für Schritt bei und schaltet dabei alles Weitere frei:
+Neue Spieler starten nur mit der **Beerenfarm**, zwei Bewohnern, 12 Beeren und 12 Holz. Alles Weitere **bauen sie selbst**: Jedes Gebäude hat Baukosten und Voraussetzungen (Bauplan). Forschung und Tal öffnen sich über die Wahrzeichen **Forschungsturm** und **Bahnhof**.
 
-| # | Aufgabe | Ziel | Schaltet frei |
+| Gebäude | Baukosten | Voraussetzung |
+| --- | --- | --- |
+| Holzfällerhütte | 12 Holz | – |
+| Weizenfeld | 10 Holz | Holzfällerhütte |
+| Küche | 18 Holz | Weizenfeld |
+| Sägewerk | 24 Holz | Holzfällerhütte |
+| Steinbruch | 12 Holz, 6 Planken | Sägewerk |
+| 🔭 Forschungsturm | 10 Planken, 10 Stein | Steinbruch |
+| Tonkuhle | 6 Planken, 8 Stein | Steinbruch |
+| Ziegelbrennerei | 12 Stein, 8 Lehm | Tonkuhle |
+| 🚂 Bahnhof | 15 Planken, 10 Stein, 8 Ziegel | Ziegelbrennerei |
+| Flachsfeld | 15 Holz, 8 Planken | Bahnhof |
+| Weberei | 12 Planken, 8 Ziegel, 6 Fasern | Flachsfeld |
+
+Das Hofbuch führt mit 15 Aufgaben durch diesen Bauplan:
+
+| # | Aufgabe | Ziel | Belohnung |
 | --- | --- | --- | --- |
 | 1 | Ein neuer Anfang | Bewohner in die Beerenfarm | – |
-| 2 | Erste Ernte | 6 Beeren einsammeln | Holzfällerhütte |
-| 3 | Holz für den Hof | 10 Holz | Weizenfeld |
-| 4 | Goldene Ähren | 6 Weizen | Küche |
-| 5 | Warme Mahlzeit | 4 Mahlzeiten | Sägewerk, +4 Mahlzeiten |
-| 6 | Bretter sägen | 5 Planken | Steinbruch, **Forschung** |
-| 7 | Steine brechen | 10 Stein | Tonkuhle |
-| 8 | Kluge Köpfe | 1 Technik erforschen | Ziegelbrennerei |
-| 9 | Ziegel brennen | 5 Ziegel | **Gemeinschaftsprojekte**, +10 Planken |
-| 10 | Gemeinsam stark | 10 Waren ins Tal einzahlen | Flachsfeld, Weberei |
-| 11 | Feine Stoffe | 3 Stoff | **Handelsschiff** |
-| 12 | Ahoi! | 5 Waren aufs Schiff | **Tal-Forschung**, +10 Mahlzeiten |
+| 2 | Erste Ernte | 6 Beeren einsammeln | – |
+| 3 | Der erste Neubau | Holzfällerhütte bauen | – |
+| 4 | Korn und Kochtopf | Weizenfeld und Küche bauen | – |
+| 5 | Warme Mahlzeit | 4 Mahlzeiten | +4 Mahlzeiten |
+| 6 | Bretter für alles | Sägewerk bauen | – |
+| 7 | Auf den Felsgipfel | Steinbruch bauen | +6 Holz |
+| 8 | Dem Himmel so nah | Forschungsturm bauen | (öffnet **Forschung**) |
+| 9 | Kluge Köpfe | 1 Technik erforschen | – |
+| 10 | Lehm und Feuer | Tonkuhle und Ziegelbrennerei bauen | +6 Planken |
+| 11 | Gleise ins Tal | Bahnhof bauen | (öffnet **Gemeinschaftsprojekte**) |
+| 12 | Gemeinsam stark | 10 Waren ins Tal einzahlen | +8 Planken |
+| 13 | Feine Fäden | Flachsfeld und Weberei bauen | – |
+| 14 | Stoff vom Webstuhl | 3 Stoff | **Handelsschiff** |
+| 15 | Ahoi! | 5 Waren aufs Schiff | **Tal-Forschung**, +10 Mahlzeiten |
 
-- Gesperrte Gebäude stehen im 3D-Dorf als Bauplätze mit Schild, gesperrte Bereiche zeigen ein Schloss.
-- Gezählt wird nur, was nach Beginn einer Aufgabe passiert (`Village.stats` und `Village.questBase`).
-- Der Server prüft die Sperren selbst; ein gesperrter Bereich lässt sich auch nicht über die API nutzen.
-- Aufgaben stehen in `QUESTS` in `server/src/game/content.js`. Ein Test stellt sicher, dass jede Aufgabe mit dem lösbar ist, was vorher freigeschaltet wurde.
+- Unbebaute Gipfel zeigen im 3D-Dorf einen Bauplatz mit Kosten (grün = vorhanden, rot = fehlt). Antippen öffnet das Bau-Panel, der Knopf **🔨 Bauen** listet alle Bauplätze.
+- Bau-Aufgaben zählen, was steht: Wer vorbaut, hat die Aufgabe schon erfüllt. Bei allen anderen Aufgaben zählt nur, was nach ihrem Beginn passiert (`Village.stats` und `Village.questBase`).
+- Der Server prüft Kosten, Voraussetzungen und Sperren selbst; nichts davon lässt sich über die API umgehen.
+- Bauplan und Aufgaben stehen in `BUILDINGS` und `QUESTS` in `server/src/game/content.js`. Tests stellen sicher, dass jedes Gebäude baubar und jede Aufgabe lösbar ist.
 
 ### Produktion
 

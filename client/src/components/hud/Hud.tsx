@@ -101,8 +101,8 @@ export function QuestTracker({ step, scene }: { step: GuideStep | null; scene: S
   const { quest, step: index, total } = village.progression;
   const reward = quest?.reward;
   const rewardNames = [
-    ...(reward?.buildings ?? []).map((b) => `${content.buildings[b]?.icon} ${content.buildings[b]?.name}`),
     ...(reward?.features ?? []).map((f) => `${content.features[f]?.icon} ${content.features[f]?.name}`),
+    ...Object.entries(reward?.resources ?? {}).map(([r, n]) => `${n} ${content.resources[r]?.icon ?? ''} ${content.resources[r]?.name ?? r}`),
   ];
 
   return (
@@ -125,6 +125,15 @@ export function QuestTracker({ step, scene }: { step: GuideStep | null; scene: S
             </div>
             <div className="mt-1.5 flex items-center gap-2">
               {quest.goal.resource && <ResourceIcon resource={quest.goal.resource} size={20} />}
+              {quest.goal.type === 'build' && (
+                <span className="text-base" aria-hidden>
+                  {(quest.goal.buildings ?? []).map((t) => (
+                    <span key={t} className={village.buildings.some((b) => b.type === t) ? '' : 'opacity-40 grayscale'}>
+                      {content.buildings[t]?.icon}
+                    </span>
+                  ))}
+                </span>
+              )}
               <div className="flex-1">
                 <ProgressBar value={quest.progress} max={quest.goal.amount} tone="honey" smooth label="Fortschritt" />
               </div>

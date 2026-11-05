@@ -10,6 +10,8 @@ function goalLabel(goal: QuestDef['goal'], names: { resource: (k: string) => str
       return `Bewohner in ${names.building(goal.building ?? '')}`;
     case 'collect':
       return `${names.resource(goal.resource ?? '')} eingesammelt`;
+    case 'build':
+      return `gebaut: ${(goal.buildings ?? []).map(names.building).join(' und ')}`;
     case 'research':
       return 'Technik erforscht';
     case 'contribute':
@@ -49,8 +51,9 @@ export function QuestPanel({ onShowBuilding }: { onShowBuilding?: (type: string)
     ? goal.building
     : goal.type === 'collect'
       ? Object.entries(content.buildings).find(([, d]) => d.outputs[goal.resource ?? ''])?.[0]
-      : undefined;
-  const rewardBuildings = reward.buildings ?? [];
+      : goal.type === 'build'
+        ? goal.buildings?.find((t) => !village.buildings.some((b) => b.type === t))
+        : undefined;
   const rewardFeatures = reward.features ?? [];
   const rewardResources = Object.entries(reward.resources ?? {});
 
@@ -76,13 +79,10 @@ export function QuestPanel({ onShowBuilding }: { onShowBuilding?: (type: string)
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-1.5 sm:items-end">
-          {(rewardBuildings.length > 0 || rewardFeatures.length > 0 || rewardResources.length > 0) && (
+          {(rewardFeatures.length > 0 || rewardResources.length > 0) && (
             <div className="slot px-2.5 py-1.5 text-xs font-bold text-bark-700">
               <span className="block text-[10px] tracking-wider text-bark-500 uppercase">Belohnung</span>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                {rewardBuildings.map((b) => (
-                  <span key={b}>{content.buildings[b]?.icon} {content.buildings[b]?.name}</span>
-                ))}
                 {rewardFeatures.map((f) => (
                   <span key={f}>{content.features[f]?.icon} {content.features[f]?.name}</span>
                 ))}
@@ -103,12 +103,11 @@ export function QuestPanel({ onShowBuilding }: { onShowBuilding?: (type: string)
   );
 }
 
-/** Platzhalter für Bereiche, die das Hofbuch noch nicht freigegeben hat. */
-export function LockedFeature({ icon, title, questIndex, questTitle, children }: {
+/** Platzhalter für Bereiche, die noch gesperrt sind. */
+export function LockedFeature({ icon, title, unlockText, children }: {
   icon: string;
   title: string;
-  questIndex: number;
-  questTitle?: string;
+  unlockText: string;
   children?: ReactNode;
 }) {
   return (
@@ -116,9 +115,7 @@ export function LockedFeature({ icon, title, questIndex, questTitle, children }:
       <p className="text-5xl" aria-hidden>{icon}</p>
       <h2 className="mt-2 text-2xl font-semibold">{title}</h2>
       <p className="mt-1 text-bark-600">{children}</p>
-      <p className="slot mx-auto mt-4 inline-block px-4 py-2 text-sm font-bold text-bark-700">
-        🔒 Wird mit Aufgabe {questIndex + 1} im Hofbuch frei{questTitle ? `: „${questTitle}“` : ''}
-      </p>
+      <p className="slot mx-auto mt-4 inline-block px-4 py-2 text-sm font-bold text-bark-700">🔒 {unlockText}</p>
     </section>
   );
 }

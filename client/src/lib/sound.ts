@@ -3,7 +3,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-export type SoundName = 'tap' | 'pop' | 'clack' | 'chime' | 'fanfare' | 'error' | 'whoosh';
+export type SoundName = 'tap' | 'pop' | 'clack' | 'chime' | 'fanfare' | 'error' | 'whoosh' | 'build';
 
 const MUTE_KEY = 'mosswood.muted';
 let ctx: AudioContext | null = null;
@@ -86,6 +86,15 @@ const SOUNDS: Record<SoundName, () => void> = {
   },
   error: () => tone(240, 0.2, 'sine', 0.07, 0, 150),
   whoosh: () => noise(0.25, 900, 0.12, 0, 0.8),
+  // drei Hammerschläge, dann ein helles „fertig“
+  build: () => {
+    [0, 0.16, 0.32].forEach((d) => {
+      noise(0.07, 1300, 0.4, d, 3);
+      tone(140, 0.1, 'triangle', 0.12, d);
+    });
+    tone(784, 0.35, 'triangle', 0.06, 0.5);
+    tone(1175, 0.5, 'sine', 0.045, 0.6);
+  },
 };
 
 export const sound = {

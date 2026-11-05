@@ -6,6 +6,7 @@
 // Client → Server (mit Ack-Callback { ok, data | error }):
 //   villager:assign  { villagerId, buildingId | null }
 //   building:collect { buildingId }
+//   building:build   { type }
 //   project:contribute { projectId, resource, amount }
 //   ship:load        { resource, amount }
 //   research:unlock  { techKey }
@@ -18,19 +19,22 @@ import { Server } from 'socket.io';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { prisma } from '../db.js';
-import { RESOURCES, TECHS } from '../game/content.js';
+import { BUILDINGS, RESOURCES, TECHS } from '../game/content.js';
 import { authenticate } from '../services/authService.js';
 import { unlockTech } from '../services/researchService.js';
 import {
   contributeToProject, getValleyState, loadShip, refreshShip,
 } from '../services/valleyService.js';
-import { assignVillager, collectBuilding, mutateVillage } from '../services/villageService.js';
+import {
+  assignVillager, buildBuilding, collectBuilding, mutateVillage,
+} from '../services/villageService.js';
 import { GameError } from '../utils/errors.js';
 
 const resourceKey = z.string().refine((r) => r in RESOURCES, 'Unbekannter Rohstoff');
 const schemas = {
   assign: z.object({ villagerId: z.string().min(1), buildingId: z.string().min(1).nullable() }),
   collect: z.object({ buildingId: z.string().min(1) }),
+  build: z.object({ type: z.string().refine((t) => Object.hasOwn(BUILDINGS, t), 'Unbekanntes Gebäude') }),
   contribute: z.object({
     projectId: z.string().min(1),
     resource: resourceKey,
@@ -116,6 +120,13 @@ export function attachSocket(httpServer) {
     on('building:collect', schemas.collect, async ({ buildingId }) => {
       const { state, result } = await collectBuilding(villageId, buildingId);
       pushVillage(state);
+      return result;
+    });
+
+    on('building:build', schemas.build, async ({ type }) => {
+      const { state, result } = await buildBuilding(villageId, type);
+      pushVillage(state);
+      valleyEvent(valleyId, '🔨', `${user.displayName} hat ${result.icon} ${result.name} gebaut.`);
       return result;
     });
 

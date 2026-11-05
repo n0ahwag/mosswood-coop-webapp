@@ -2,6 +2,7 @@
 // des Dorfes in eine konkrete Handlung und ein Ziel, über dem der Wegweiser schwebt.
 
 import type { GameContent, ValleyState, VillageState } from '../lib/types';
+import { lacking } from './progression';
 
 export type Scene = 'village' | 'valley';
 
@@ -28,6 +29,10 @@ function stepForResource(
   const def = type ? content.buildings[type] : undefined;
   const building = type ? village.buildings.find((b) => b.type === type) : undefined;
   const resName = content.resources[res]?.name ?? res;
+  if (type && def && !building && depth < 3) {
+    const inner = stepForBuild(village, content, type, selectedVillagerName, depth + 1);
+    return { text: `${resName} bekommst du aus „${def.name}“. ${inner.text}`, target: inner.target };
+  }
   if (!type || !def || !building) {
     return { text: `${resName} kannst du noch nicht herstellen.`, target: null };
   }
@@ -68,6 +73,32 @@ function stepForResource(
   return { text: `„${def.name}“ arbeitet. Warte kurz, bis der Balken voll ist, dann sammelst du ein.`, target };
 }
 
+/** Was fehlt, um ein Gebäude zu bauen? Erst Voraussetzungen, dann Rohstoffe. */
+function stepForBuild(
+  village: VillageState, content: GameContent, type: string, selectedVillagerName: string | null, depth = 0,
+): GuideStep {
+  const def = content.buildings[type];
+  const plan = village.progression.plans.find((p) => p.type === type);
+  const target: GuideTarget = { scene: 'village', kind: 'building', type };
+  if (!def || !plan) return { text: `„${def?.name ?? type}“ steht schon.`, target };
+
+  if (plan.missing.length && depth < 3) {
+    const first = plan.missing[0];
+    const inner = stepForBuild(village, content, first, selectedVillagerName, depth + 1);
+    return { text: `Vor „${def.name}“ muss „${content.buildings[first]?.name}“ stehen. ${inner.text}`, target: inner.target };
+  }
+
+  const lack = lacking(village.inventory, plan.cost);
+  if (lack.length === 0) {
+    return { text: `Du hast alles für „${def.name}“! Tippe auf den Bauplatz mit dem Hammer und dann auf „Bauen“.`, target };
+  }
+  const [res, n] = lack[0];
+  const resName = content.resources[res]?.name ?? res;
+  if (depth >= 3) return { text: `Für „${def.name}“ fehlen noch ${n} ${resName}.`, target };
+  const inner = stepForResource(village, content, res, selectedVillagerName, depth + 1);
+  return { text: `Für „${def.name}“ fehlen noch ${n} ${resName}. ${inner.text}`, target: inner.target ?? target };
+}
+
 export function nextStep(
   village: VillageState | null,
   valley: ValleyState | null,
@@ -79,9 +110,14 @@ export function nextStep(
   const quest = village.progression.quest;
 
   if (!quest) {
-    return scene === 'village'
-      ? { text: 'Du hast das Hofbuch geschafft! Fahr mit der Bahn ins Tal und hilf bei den Monumenten.', target: { scene: 'village', kind: 'landmark', key: 'trainStation' } }
-      : { text: 'Zahle Waren in die Monumente ein und belade das Handelsschiff, wenn es im Hafen liegt.', target: null };
+    if (scene === 'village') {
+      const plan = village.progression.plans.find((p) => p.affordable);
+      if (plan) {
+        return { text: `Du kannst „${content.buildings[plan.type]?.name}“ bauen. Tippe auf den Bauplatz.`, target: { scene: 'village', kind: 'building', type: plan.type } };
+      }
+      return { text: 'Du hast das Hofbuch geschafft! Fahr mit der Bahn ins Tal und hilf bei den Monumenten.', target: { scene: 'village', kind: 'landmark', key: 'trainStation' } };
+    }
+    return { text: 'Zahle Waren in die Monumente ein und belade das Handelsschiff, wenn es im Hafen liegt.', target: null };
   }
 
   const { goal } = quest;
@@ -103,6 +139,11 @@ export function nextStep(
     }
     case 'collect':
       return stepForResource(village, content, goal.resource ?? '', selectedVillagerName);
+    case 'build': {
+      const next = (goal.buildings ?? []).find((t) => !village.buildings.some((b) => b.type === t));
+      if (!next) return null;
+      return stepForBuild(village, content, next, selectedVillagerName);
+    }
     case 'research': {
       const options = Object.values(content.techs).filter((t) =>
         t.scope === 'player' && !village.techKeys.includes(t.key) && t.requires.every((r) => village.techKeys.includes(r)));
