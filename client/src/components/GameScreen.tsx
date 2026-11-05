@@ -215,7 +215,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
             </Sheet>
           )}
           {focusedPlan && !focused && (
-            <Sheet title={`Bauplatz ${content.buildings[focusedPlan.type]?.name ?? ''}`} onClose={() => setSelectedPlan(null)}>
+            <Sheet title={`Ruine ${content.buildings[focusedPlan.type]?.name ?? ''}`} onClose={() => setSelectedPlan(null)}>
               <BuildPlanCard
                 plan={focusedPlan}
                 highlight
@@ -289,7 +289,7 @@ export function GameScreen({ onSceneFailed }: { onSceneFailed: () => void }) {
         </Modal>
       )}
       {modal === 'build' && (
-        <Modal title="Bauen" icon="🔨" onClose={() => setModal(null)}>
+        <Modal title="Aufbauen" icon="🔨" onClose={() => setModal(null)}>
           <BuildSection
             onBuilt={(id, type) => {
               setModal(null);

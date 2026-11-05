@@ -233,7 +233,7 @@ Das Hofbuch führt mit 15 Aufgaben durch diesen Bauplan:
 | 14 | Stoff vom Webstuhl | 3 Stoff | **Handelsschiff** |
 | 15 | Ahoi! | 5 Waren aufs Schiff | **Tal-Forschung**, +10 Mahlzeiten |
 
-- Unbebaute Gipfel zeigen im 3D-Dorf einen Bauplatz mit Kosten (grün = vorhanden, rot = fehlt). Antippen öffnet das Bau-Panel, der Knopf **🔨 Bauen** listet alle Bauplätze.
+- Noch nicht gebaute Gebäude stehen als **verfallene Ruine** des späteren Gebäudes auf ihrem Gipfel (verblasst, Dach eingestürzt, Geröll und Unkraut), mit den Baukosten auf dem Schild (grün = vorhanden, rot = fehlt). Ist genug da, steht ein Gerüst daneben und ein Hammer schwebt darüber. Antippen öffnet das Bau-Panel, der Knopf **🔨 Bauen** listet alle Ruinen.
 - Bau-Aufgaben zählen, was steht: Wer vorbaut, hat die Aufgabe schon erfüllt. Bei allen anderen Aufgaben zählt nur, was nach ihrem Beginn passiert (`Village.stats` und `Village.questBase`).
 - Der Server prüft Kosten, Voraussetzungen und Sperren selbst; nichts davon lässt sich über die API umgehen.
 - Bauplan und Aufgaben stehen in `BUILDINGS` und `QUESTS` in `server/src/game/content.js`. Tests stellen sicher, dass jedes Gebäude baubar und jede Aufgabe lösbar ist.

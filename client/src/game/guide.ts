@@ -90,7 +90,7 @@ function stepForBuild(
 
   const lack = lacking(village.inventory, plan.cost);
   if (lack.length === 0) {
-    return { text: `Du hast alles für „${def.name}“! Tippe auf den Bauplatz mit dem Hammer und dann auf „Bauen“.`, target };
+    return { text: `Du hast alles für „${def.name}“! Tippe auf die Ruine mit dem Hammer und dann auf „Aufbauen“.`, target };
   }
   const [res, n] = lack[0];
   const resName = content.resources[res]?.name ?? res;
@@ -113,7 +113,7 @@ export function nextStep(
     if (scene === 'village') {
       const plan = village.progression.plans.find((p) => p.affordable);
       if (plan) {
-        return { text: `Du kannst „${content.buildings[plan.type]?.name}“ bauen. Tippe auf den Bauplatz.`, target: { scene: 'village', kind: 'building', type: plan.type } };
+        return { text: `Du kannst „${content.buildings[plan.type]?.name}“ wieder aufbauen. Tippe auf die Ruine.`, target: { scene: 'village', kind: 'building', type: plan.type } };
       }
       return { text: 'Du hast das Hofbuch geschafft! Fahr mit der Bahn ins Tal und hilf bei den Monumenten.', target: { scene: 'village', kind: 'landmark', key: 'trainStation' } };
     }

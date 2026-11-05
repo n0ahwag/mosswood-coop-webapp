@@ -245,13 +245,13 @@ export const QUESTS = [
   },
   {
     key: 'buildLumber', icon: '🪓', title: 'Der erste Neubau',
-    text: 'Gebäude baust du selbst mit Rohstoffen aus deinem Lager. Auf dem Waldgipfel wartet ein Bauplatz: Tippe ihn an und baue die Holzfällerhütte.',
+    text: 'Auf den Gipfeln stehen die Ruinen eines alten Dorfes. Du baust sie mit Rohstoffen aus deinem Lager wieder auf. Tippe die verfallene Holzfällerhütte auf dem Waldgipfel an.',
     goal: { type: 'build', buildings: ['lumberCamp'], amount: 1 },
     reward: {},
   },
   {
     key: 'farmKitchen', icon: '🌾', title: 'Korn und Kochtopf',
-    text: 'Schick jemanden zum Holzfällen. Mit dem Holz baust du das Weizenfeld und danach die Küche.',
+    text: 'Schick jemanden zum Holzfällen. Mit dem Holz baust du das verwilderte Weizenfeld und danach die alte Küche wieder auf.',
     goal: { type: 'build', buildings: ['wheatField', 'kitchen'], amount: 2 },
     reward: {},
   },
@@ -275,7 +275,7 @@ export const QUESTS = [
   },
   {
     key: 'buildLab', icon: '🔭', title: 'Dem Himmel so nah',
-    text: 'Auf dem höchsten Gipfel ist Platz für einen Forschungsturm. Baue ihn aus Planken und Stein.',
+    text: 'Auf dem höchsten Gipfel verfällt eine alte Sternwarte. Bau den Forschungsturm mit Planken und Stein wieder auf.',
     goal: { type: 'build', buildings: ['researchLab'], amount: 1 },
     reward: {},
   },
@@ -287,13 +287,13 @@ export const QUESTS = [
   },
   {
     key: 'bricksCraft', icon: '🔥', title: 'Lehm und Feuer',
-    text: 'Am Bergsee kannst du eine Tonkuhle anlegen. Mit ihrem Lehm baust du danach die Ziegelbrennerei.',
+    text: 'Am Bergsee liegen eine alte Tonkuhle und eine zerfallene Ziegelbrennerei. Bau erst die Tonkuhle auf, mit ihrem Lehm dann die Brennerei.',
     goal: { type: 'build', buildings: ['clayPit', 'brickKiln'], amount: 2 },
     reward: { resources: { planks: 6 } },
   },
   {
     key: 'buildStation', icon: '🚂', title: 'Gleise ins Tal',
-    text: 'Unten im Tal leben deine Nachbarn. Baue den Bahnhof, dann bringt dich die Bergbahn zu ihnen.',
+    text: 'Unten im Tal leben deine Nachbarn. Bring den verlassenen Bahnhof wieder in Schuss, dann bringt dich die Bergbahn zu ihnen.',
     goal: { type: 'build', buildings: ['trainStation'], amount: 1 },
     reward: {},
   },

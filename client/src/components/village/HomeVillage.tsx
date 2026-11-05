@@ -324,8 +324,8 @@ export function BuildSection({ onBuilt }: { onBuilt?: (buildingId: string, type:
   return (
     <section>
       <div className="mb-2 flex flex-wrap items-baseline gap-x-2">
-        <h3 className="text-lg font-semibold">🔨 Bauplätze</h3>
-        <span className="text-sm text-bark-500">Neue Gebäude baust du mit Rohstoffen aus deinem Lager</span>
+        <h3 className="text-lg font-semibold">🔨 Ruinen aufbauen</h3>
+        <span className="text-sm text-bark-500">Die alten Gebäude baust du mit Rohstoffen aus deinem Lager wieder auf</span>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((p) => (

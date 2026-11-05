@@ -11,11 +11,20 @@ import { BuildingPlot, DiningTable, Homes } from './Buildings';
 import { QUALITY, WorldClock } from './clock';
 import { ConstructionSite } from './ConstructionSite';
 import { Effects } from './Effects';
+import { Birds, Butterflies, VillageFestive } from './Festive';
 import { HtmlPortalContext, useHudOffset } from './htmlPortal';
 import { Beacon, Landmark, RailwayOnly } from './Landmarks';
 import {
-  HOME_SLOTS, homeSpot, plazaSpot, PLOTS, TABLE_POS, tableSpot, VILLAGE, workSpot, type LandmarkKey, type Vec3,
+  HOME_SLOTS, homeSpot, LAKE, PEAKS, plazaSpot, PLOTS, TABLE_POS, tableSpot, VILLAGE, workSpot, type LandmarkKey, type Vec3,
 } from './layout';
+
+/** Wo Schmetterlinge flattern: Wiesen am Rand der Plateaus. */
+const BUTTERFLY_SPOTS: [number, number][] = [
+  [VILLAGE.pos[0] + 3.8, VILLAGE.pos[1] + 2.2],
+  [PEAKS.berry.pos[0] + 1.5, PEAKS.berry.pos[1] - 1.5],
+  [PEAKS.wheat.pos[0] - 1.8, PEAKS.wheat.pos[1] + 1.2],
+  [LAKE.pos[0] - 1.6, LAKE.pos[1] + 1.4],
+];
 import { Crossings, Lake, Plaza, Terrain, Waterfalls } from './Mountain';
 import { CloudBanks, CloudSea, DistantMountains, Lights, SKY, SkyDome } from './Sky';
 import { Boulders, Meadow, Trees } from './Vegetation';
@@ -207,7 +216,7 @@ export default function VillageScene({
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.05;
+            gl.toneMappingExposure = 1.15;
             if (import.meta.env.DEV) (window as unknown as { __mwGl?: THREE.WebGLRenderer }).__mwGl = gl;
           }}
           onPointerMissed={onBackgroundClick}
@@ -231,6 +240,9 @@ export default function VillageScene({
           <Trees />
           <Meadow />
           <Boulders />
+          <VillageFestive />
+          <Birds />
+          <Butterflies spots={BUTTERFLY_SPOTS} />
           <DiningTable />
           <Homes
             slots={HOME_SLOTS.slice(0, homeCount)}

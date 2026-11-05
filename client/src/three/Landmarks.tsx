@@ -17,7 +17,7 @@ type V3 = [number, number, number];
 
 // ---------- Sternwarte ----------
 
-function ResearchTower() {
+export function ResearchTower() {
   const m = mats();
   const dome = useRef<THREE.Group>(null);
   const bubbles = useRef<THREE.Group>(null);
@@ -232,12 +232,14 @@ function Railway({ toWorld, baseY }: { toWorld: (lx: number, lz: number) => [num
 }
 
 export function TrainStation({
-  departing, toWorld, baseY = 0,
+  departing, toWorld, baseY = 0, smoking = true,
 }: {
   locked?: boolean;
   departing: number;
   toWorld?: (lx: number, lz: number) => [number, number];
   baseY?: number;
+  /** false: verlassener Bahnhof (Ruine) ohne Dampf */
+  smoking?: boolean;
 }) {
   const m = mats();
   const train = useRef<THREE.Group>(null);
@@ -265,7 +267,7 @@ export function TrainStation({
           <FlatRails length={6.6} />
         )}
         <group ref={train}>
-          <Train smoking />
+          <Train smoking={smoking} />
         </group>
       </group>
       {/* Stationshäuschen mit Vordach */}

@@ -8,12 +8,12 @@ import { QUALITY, worldTime } from './clock';
 import { fbm2, mulberry32 } from './layout';
 
 export const SKY = {
-  zenith: '#6fb7e6',
-  horizon: '#f4e8d2',
-  fog: '#e7e9e2',
+  zenith: '#5db8f2',
+  horizon: '#fdf2db',
+  fog: '#eef3f0',
   sun: new THREE.Vector3(0.55, 0.62, 0.35).normalize(),
   cloudTop: '#ffffff',
-  cloudShade: '#c4cde4',
+  cloudShade: '#d9e1f6',
 };
 
 // ---------- Himmelskuppel ----------
@@ -227,16 +227,18 @@ export function Lights({ shadowSize = 36, target = [0, 3, 0] as [number, number,
     if (!l) return;
     l.target.position.set(...target);
     l.target.updateMatrixWorld();
+    // weichere, hellere Schatten wirken freundlicher
+    (l.shadow as THREE.LightShadow & { intensity?: number }).intensity = 0.6;
   }, [target]);
   const sunPos = SKY.sun.clone().multiplyScalar(60).add(new THREE.Vector3(...target));
   return (
     <>
-      <hemisphereLight args={['#fff3dc', '#7d9a63', 0.75]} />
+      <hemisphereLight args={['#fff8e6', '#b8d68c', 1.15]} />
       <directionalLight
         ref={sun}
         position={sunPos}
-        intensity={2.6}
-        color="#ffe6bf"
+        intensity={2.5}
+        color="#fff0d4"
         castShadow
         shadow-mapSize={[mapSize, mapSize]}
         shadow-camera-left={-shadowSize}
@@ -249,7 +251,7 @@ export function Lights({ shadowSize = 36, target = [0, 3, 0] as [number, number,
         shadow-normalBias={0.035}
       />
       {/* Weiches Umgebungslicht für Glanz und Tiefe, ohne externe Bilddateien */}
-      <Environment resolution={128} frames={1} environmentIntensity={0.55}>
+      <Environment resolution={128} frames={1} environmentIntensity={0.75}>
         <color attach="background" args={['#cfe3ee']} />
         <Lightformer form="rect" intensity={2.2} color="#fff4de" position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[40, 40, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#bcd9ff" position={[-14, 4, -10]} scale={[20, 8, 1]} target={[0, 0, 0]} />

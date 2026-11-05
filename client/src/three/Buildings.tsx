@@ -508,7 +508,7 @@ export function Homes({ slots, occupiedResting }: { slots: Vec2[]; occupiedResti
 
 // ---------- Hülle mit Grundfläche, Auswahl und Schild ----------
 
-function BuildingModel({ type, working }: { type: string; working: boolean }) {
+export function BuildingModel({ type, working }: { type: string; working: boolean }) {
   switch (type) {
     case 'lumberCamp': return <LumberCamp working={working} />;
     case 'quarry': return <Quarry working={working} />;

@@ -20,17 +20,17 @@ const col = (hex: string) => new THREE.Color(hex);
 const TERRAIN_SIZE = 66;
 
 const PALETTE = {
-  grassA: col('#6fa43f'),
-  grassB: col('#9cc458'),
-  grassDry: col('#b9bd68'),
-  moss: col('#5d8f3a'),
-  dirt: col('#93704d'),
-  path: col('#d2b68a'),
-  pathDark: col('#b39467'),
-  rockA: col('#a69a8a'),
-  rockB: col('#857869'),
-  rockWarm: col('#b39a7f'),
-  low: col('#7e8fa0'),
+  grassA: col('#7ec24a'),
+  grassB: col('#b2e05e'),
+  grassDry: col('#d6dc78'),
+  moss: col('#79b848'),
+  dirt: col('#d2a56f'),
+  path: col('#f4dfae'),
+  pathDark: col('#e3c48f'),
+  rockA: col('#e4c79e'),
+  rockB: col('#c9a57b'),
+  rockWarm: col('#ecb987'),
+  low: col('#b9cde0'),
 };
 
 function buildTerrainGeometry(seg: number) {
@@ -70,14 +70,14 @@ function buildTerrainGeometry(seg: number) {
 
       // Fels mit Schichtbändern
       const strata = 0.5 + 0.5 * Math.sin(y * 2.3 + fbm2(x * 0.2, z * 0.2, 3) * 5);
-      tmp.copy(PALETTE.rockA).lerp(PALETTE.rockB, strata * 0.75).lerp(PALETTE.rockWarm, Math.max(0, fbm2(x * 0.08 + 5, z * 0.08, 2) - 0.45));
+      tmp.copy(PALETTE.rockA).lerp(PALETTE.rockB, strata * 0.55).lerp(PALETTE.rockWarm, Math.max(0, fbm2(x * 0.08 + 5, z * 0.08, 2) - 0.45));
       // Moos und Gras halten sich auch auf steileren Hängen, Fels nur an echten Wänden
       const mossy = (fbm2(x * 0.25 + 9, z * 0.25, 3) - 0.35) * 0.25;
       const grassy = THREE.MathUtils.smoothstep(ny + mossy, 0.5, 0.7) * (0.85 + flat[i] * 0.15);
       // Übergang: ein Streifen Erde und Moos
       const edge = 1 - Math.abs(grassy - 0.5) * 2;
       c.lerp(tmp, 1 - grassy);
-      c.lerp(PALETTE.dirt, edge * 0.35);
+      c.lerp(PALETTE.dirt, edge * 0.25);
       if (grassy > 0.3 && flat[i] < 0.5) c.lerp(PALETTE.moss, 0.25 * (1 - flat[i]));
 
       // Trampelpfade auf den Plateaus
@@ -91,12 +91,12 @@ function buildTerrainGeometry(seg: number) {
       }
 
       // tiefe Lagen wirken kühler (Luftperspektive)
-      c.lerp(PALETTE.low, (1 - THREE.MathUtils.smoothstep(y, 0.5, 4)) * 0.35);
+      c.lerp(PALETTE.low, (1 - THREE.MathUtils.smoothstep(y, 0.5, 4)) * 0.25);
 
       // Umgebungsverdeckung aus der Krümmung: Mulden dunkler, Kanten heller
       const avg = (hAt(r - k, q) + hAt(r + k, q) + hAt(r, q - k) + hAt(r, q + k)) / 4;
       const cav = avg - y;
-      const ao = 1 - Math.min(0.42, Math.max(0, cav) * 0.32) + Math.min(0.08, Math.max(0, -cav) * 0.06);
+      const ao = 1 - Math.min(0.2, Math.max(0, cav) * 0.18) + Math.min(0.06, Math.max(0, -cav) * 0.05);
       c.multiplyScalar(ao);
 
       colors[i * 3] = c.r;
@@ -118,7 +118,7 @@ export function makeTerrainMaterial(cloudFade = true) {
     shader.uniforms.uGrassN = { value: grass.normal };
     shader.uniforms.uRock = { value: rock.map };
     shader.uniforms.uRockN = { value: rock.normal };
-    shader.uniforms.uCloud = { value: new THREE.Color('#e9eef4') };
+    shader.uniforms.uCloud = { value: new THREE.Color('#f5f8fc') };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
       .replace(
@@ -146,7 +146,7 @@ vec3 triW() { vec3 b = pow(abs(normalize(vWNrm)), vec3(6.0)); return b / (b.x + 
   vec3 ry = texture2D(uRock, vWPos.xz / 4.0).rgb;
   vec3 rz = texture2D(uRock, vWPos.xy / 4.0).rgb;
   vec3 rk = rx * bw.x + ry * bw.y + rz * bw.z;
-  diffuseColor.rgb *= mix(rk * 1.55, g * 1.45, grassy);
+  diffuseColor.rgb *= mix(rk, g, grassy) * 1.2;
 }`,
       )
       .replace(
@@ -160,7 +160,7 @@ vec3 triW() { vec3 b = pow(abs(normalize(vWNrm)), vec3(6.0)); return b / (b.x + 
   vec3 tz = texture2D(uRockN, vWPos.xy / 4.0).xyz * 2.0 - 1.0;
   vec3 nW = normalize(vWNrm);
   vec3 pert = vec3(0.0, tx.y, tx.x) * bw.x + vec3(ty.x, 0.0, ty.y) * bw.y + vec3(tz.x, tz.y, 0.0) * bw.z;
-  nW = normalize(nW + pert * mix(0.85, 0.45, grassy));
+  nW = normalize(nW + pert * mix(0.45, 0.25, grassy));
   normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
 }`,
       )
@@ -592,12 +592,12 @@ export function Waterfalls() {
 
 // ---------- Kontaktschatten unter Gebäuden ----------
 
-export function GroundShadow({ radius, opacity = 0.32 }: { radius: number; opacity?: number }) {
+export function GroundShadow({ radius, opacity = 0.22 }: { radius: number; opacity?: number }) {
   const map = softDotTexture();
   return (
     <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
       <planeGeometry args={[radius * 2, radius * 2]} />
-      <meshBasicMaterial map={map} color="#2a1f12" transparent opacity={opacity} depthWrite={false} polygonOffset polygonOffsetFactor={-2} />
+      <meshBasicMaterial map={map} color="#5a4526" transparent opacity={opacity} depthWrite={false} polygonOffset polygonOffsetFactor={-2} />
     </mesh>
   );
 }

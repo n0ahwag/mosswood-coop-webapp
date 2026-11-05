@@ -98,13 +98,26 @@ export interface TexturePair {
   normal: THREE.CanvasTexture;
 }
 
-function paint(size: number, shader: Shader, normalStrength: number, tile: number): TexturePair {
+interface PaintOptions {
+  /** Helligkeit auf einen festen Mittelwert bringen, damit Materialien nicht abdunkeln. */
+  normalize?: boolean;
+  /** Kontrast um den Mittelwert (1 = unverändert, kleiner = ruhiger und verspielter). */
+  contrast?: number;
+}
+
+// Mittlere Helligkeit der hellen Muster-Texturen (sRGB). Das Material färbt sie ein.
+const TARGET_MEAN = 0.93;
+
+function paint(size: number, shader: Shader, normalStrength: number, tile: number, opts: PaintOptions = {}): TexturePair {
+  const { normalize = true, contrast = 0.7 } = opts;
   const color = document.createElement('canvas');
   color.width = color.height = size;
   const cctx = color.getContext('2d')!;
   const img = cctx.createImageData(size, size);
   const heights = new Float32Array(size * size);
+  const rgb = new Float32Array(size * size * 3);
   const px: Pixel = { r: 1, g: 1, b: 1, h: 0 };
+  let sum = 0;
 
   for (let y = 0; y < size; y++) {
     const v = 1 - (y + 0.5) / size; // Zeile 0 ist oben = v nahe 1 (Texturen werden gespiegelt geladen)
@@ -115,11 +128,21 @@ function paint(size: number, shader: Shader, normalStrength: number, tile: numbe
       shader(u, v, px);
       const i = y * size + x;
       heights[i] = px.h;
-      img.data[i * 4] = clamp01(px.r) * 255;
-      img.data[i * 4 + 1] = clamp01(px.g) * 255;
-      img.data[i * 4 + 2] = clamp01(px.b) * 255;
-      img.data[i * 4 + 3] = 255;
+      rgb[i * 3] = px.r;
+      rgb[i * 3 + 1] = px.g;
+      rgb[i * 3 + 2] = px.b;
+      sum += (px.r + px.g + px.b) / 3;
     }
+  }
+  const mean = sum / (size * size);
+  const gain = normalize && mean > 0 ? TARGET_MEAN / mean : 1;
+  const center = normalize ? TARGET_MEAN : mean;
+  for (let i = 0; i < size * size; i++) {
+    for (let k = 0; k < 3; k++) {
+      const c = rgb[i * 3 + k] * gain;
+      img.data[i * 4 + k] = clamp01(center + (c - center) * contrast) * 255;
+    }
+    img.data[i * 4 + 3] = 255;
   }
   cctx.putImageData(img, 0, 0);
 
@@ -353,19 +376,19 @@ const GENERATORS = {
       const speck = fbm(u, v, 48, 48, 3, 91);
       const mortar = ly < 0.1 || lx < 0.03;
       if (mortar) {
-        px.r = 0.86 * (0.9 + speck * 0.15);
-        px.g = 0.8 * (0.9 + speck * 0.15);
-        px.b = 0.7 * (0.9 + speck * 0.15);
+        px.r = 0.98 * (0.92 + speck * 0.1);
+        px.g = 0.93 * (0.92 + speck * 0.1);
+        px.b = 0.84 * (0.92 + speck * 0.1);
         px.h = 0.05;
         return;
       }
       const tone = hash(wrap(col, 4), wrap(row, rows), 93);
-      const l = (0.75 + tone * 0.3) * (0.88 + speck * 0.2);
-      px.r = 0.78 * l;
-      px.g = 0.38 * l;
-      px.b = 0.26 * l;
+      const l = (0.85 + tone * 0.2) * (0.92 + speck * 0.12);
+      px.r = 0.95 * l;
+      px.g = 0.52 * l;
+      px.b = 0.36 * l;
       px.h = 0.45 + speck * 0.2 + smooth(0, 0.1, Math.min(lx, 1 - lx, ly - 0.1, 1 - ly)) * 0.3;
-    }, 4, 1),
+    }, 4, 1, { normalize: false, contrast: 0.85 }),
 
   /** Rinde: senkrechte Furchen. */
   bark: () =>

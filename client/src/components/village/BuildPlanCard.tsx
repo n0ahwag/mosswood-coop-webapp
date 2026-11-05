@@ -31,7 +31,7 @@ export function BuildPlanCard({
     const res = await actions.build(plan.type);
     setBusy(false);
     if (res) {
-      fx.burstAt(button, '🔨 Gebaut!', 'green');
+      fx.burstAt(button, '🔨 Aufgebaut!', 'green');
       onBuilt?.(res.buildingId, plan.type);
     }
   };
@@ -48,9 +48,9 @@ export function BuildPlanCard({
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-lg leading-tight font-semibold">{def.name}</h4>
             {plan.affordable ? (
-              <span className="chip animate-bob bg-gold-300 text-bark-900">🔨 Baubar</span>
+              <span className="chip animate-bob bg-gold-300 text-bark-900">🔨 Aufbaubar</span>
             ) : plan.available ? (
-              <span className="chip bg-parchment text-bark-600">Bauplatz frei</span>
+              <span className="chip bg-parchment text-bark-600">🏚️ Ruine</span>
             ) : (
               <span className="chip bg-parchment text-bark-500">🔒 Gesperrt</span>
             )}
@@ -86,7 +86,7 @@ export function BuildPlanCard({
           <CostChips cost={plan.cost} inventory={village.inventory} />
         </div>
         <button className="btn-primary shrink-0 px-3 py-1.5 text-sm" disabled={!plan.affordable || busy} onClick={build}>
-          🔨 Bauen
+          🔨 Aufbauen
         </button>
       </footer>
       {plan.available && lack.length > 0 && (

@@ -97,7 +97,7 @@ function pineGeometry() {
     return planarUv(g, 1.1);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#2f5a33', '#6f9e4f', 0.4, 3.2);
+  return paintGradient(merged, '#3f8a45', '#a2d466', 0.4, 3.2);
 }
 
 /** Laubbaum-Krone: mehrere verschmolzene, buckelige Kugeln. Mittelpunkt bei y = 0. */
@@ -116,15 +116,15 @@ function crownGeometry() {
     return planarUv(g, 1.2);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#3e6a2e', '#a2cf62', -0.8, 1.2);
+  return paintGradient(merged, '#5aa03a', '#cdf07c', -0.8, 1.2);
 }
 
 /** Grasbüschel aus sieben gebogenen Halmen. Fuß bei y = 0, Höhe 1. */
 function tuftGeometry() {
   const positions: number[] = [];
   const colors: number[] = [];
-  const base = new THREE.Color('#4f7d2f');
-  const tip = new THREE.Color('#b9d97a');
+  const base = new THREE.Color('#6aa83a');
+  const tip = new THREE.Color('#dcf38e');
   const rng = mulberry32(77);
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2 + rng();
@@ -228,7 +228,7 @@ function scatterTrees() {
     const gap = dense ? 1.15 : 1.6 + (1 - up) * 1.5;
     if (!grid.fits(p, gap)) return;
     grid.add(p);
-    const pine = dense || g.flat < 0.4 ? rng() < 0.85 : rng() < 0.3;
+    const pine = dense ? rng() < 0.7 : g.flat < 0.4 ? rng() < 0.55 : rng() < 0.2;
     const s = (pine ? 0.62 + rng() * 0.55 : 0.75 + rng() * 0.5) * (g.flat < 0.3 ? 0.9 : 1);
     const item: Item = {
       x, y: g.h - 0.05, z, s, rot: rng() * Math.PI * 2,
@@ -356,7 +356,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
         x, y: g.h - 0.02, z, s: 0.22 + rng() * 0.22, rot: rng() * Math.PI * 2,
         color: new THREE.Color(grassTint[Math.floor(rng() * grassTint.length)]),
       });
-      if (rng() < 0.07) {
+      if (rng() < 0.13) {
         flowers.push({
           x: x + 0.15, y: g.h + 0.12, z: z - 0.1, s: 0.6 + rng() * 0.5, rot: 0,
           color: new THREE.Color(flowerTint[Math.floor(rng() * flowerTint.length)]),
@@ -392,7 +392,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
       <instancedMesh ref={grassRef} args={[tuft, grassMat, items.grass.length]} receiveShadow />
       <instancedMesh ref={flowerRef} args={[undefined, undefined, items.flowers.length]}>
         <icosahedronGeometry args={[0.07, 1]} />
-        <meshStandardMaterial roughness={0.7} emissive="#ffffff" emissiveIntensity={0.05} />
+        <meshStandardMaterial roughness={0.6} emissive="#ffffff" emissiveIntensity={0.15} />
       </instancedMesh>
       <instancedMesh ref={bushRef} args={[crownGeo, leafMat, items.bushes.length]} castShadow receiveShadow />
     </group>

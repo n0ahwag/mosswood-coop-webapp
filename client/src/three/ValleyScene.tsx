@@ -77,12 +77,12 @@ function valleyGeometry(size: number, seg: number, farms: number) {
   geo.computeVertexNormals();
   const n = geo.attributes.normal as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
-  const grassA = new THREE.Color('#78b048');
-  const grassB = new THREE.Color('#a5cc5c');
-  const meadow = new THREE.Color('#c2cf6a');
-  const rock = new THREE.Color('#9e927f');
-  const sand = new THREE.Color('#d8c495');
-  const path = new THREE.Color('#d6bb8e');
+  const grassA = new THREE.Color('#84c24e');
+  const grassB = new THREE.Color('#b6e062');
+  const meadow = new THREE.Color('#d8e27a');
+  const rock = new THREE.Color('#dcc6a4');
+  const sand = new THREE.Color('#f3deac');
+  const path = new THREE.Color('#f4deae');
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
@@ -593,7 +593,7 @@ export default function ValleyScene({
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
             gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.05;
+            gl.toneMappingExposure = 1.2;
           }}
           onPointerMissed={() => onSelect(null)}
         >

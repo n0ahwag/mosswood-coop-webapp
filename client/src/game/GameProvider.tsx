@@ -150,7 +150,7 @@ export function GameProvider({
             ? `${res.icon} ${res.name} gebaut! Tippe ihn an, um zu forschen.`
             : res.feature === 'valley'
               ? `${res.icon} ${res.name} gebaut! Die Bahn fährt jetzt ins Tal.`
-              : `${res.icon} ${res.name} gebaut!`,
+              : `${res.icon} ${res.name} ist wieder aufgebaut!`,
         );
         return res;
       }, 'build'),
