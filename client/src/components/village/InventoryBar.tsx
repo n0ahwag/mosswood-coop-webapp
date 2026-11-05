@@ -1,10 +1,11 @@
 import { useGame } from '../../game/GameProvider';
 import type { Inventory } from '../../lib/types';
+import { ResourceIcon } from '../icons/ResourceIcon';
 
 export function InventoryBar({ inventory, cap }: { inventory: Inventory; cap: number }) {
   const { content } = useGame();
   return (
-    <div className="card grid grid-cols-2 gap-2 p-3 sm:grid-cols-5 xl:grid-cols-10">
+    <div className="card grid grid-cols-5 gap-1.5 p-2 sm:gap-2 sm:p-3 xl:grid-cols-10">
       {Object.entries(content.resources).map(([key, res]) => {
         const amount = inventory[key] ?? 0;
         const full = amount >= cap;
@@ -12,14 +13,13 @@ export function InventoryBar({ inventory, cap }: { inventory: Inventory; cap: nu
           <div
             key={key}
             title={`${res.name}: ${amount} / ${cap}`}
-            className={`flex items-center gap-2 rounded-2xl px-2.5 py-1.5 ${
-              full ? 'bg-clay-200' : res.tier === 'raw' ? 'bg-parchment' : 'bg-honey-200'
-            }`}
+            aria-label={`${res.name}: ${amount} von ${cap}`}
+            className={`slot flex flex-col items-center gap-0.5 px-1 py-1.5 sm:flex-row sm:gap-2 sm:px-2 ${full ? 'border-clay-400! bg-clay-200!' : ''}`}
           >
-            <span className="text-xl" aria-hidden>{res.icon}</span>
-            <div className="min-w-0 leading-tight">
-              <div className="font-display text-lg font-semibold tabular-nums">{amount}</div>
-              <div className="truncate text-[11px] font-bold text-bark-500">{res.name}</div>
+            <ResourceIcon resource={key} size={30} className="sm:h-[34px] sm:w-[34px]" />
+            <div className="min-w-0 text-center leading-tight sm:text-left">
+              <div className="font-display text-base font-semibold tabular-nums sm:text-lg">{amount}</div>
+              <div className="hidden truncate text-[11px] font-bold text-bark-500 sm:block">{res.name}</div>
             </div>
           </div>
         );

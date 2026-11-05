@@ -3,8 +3,9 @@ import {
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { api, ApiError, SERVER_URL } from '../lib/api';
+import { sound, type SoundName } from '../lib/sound';
 import type {
-  Ack, GameContent, Me, ValleyEvent, ValleyState, VillageState,
+  Ack, GameContent, Inventory, Me, ValleyEvent, ValleyState, VillageState,
 } from '../lib/types';
 
 interface Toast {
@@ -23,12 +24,13 @@ interface GameApi {
   toasts: Toast[];
   notify: (text: string, tone?: Toast['tone']) => void;
   logout: () => void;
+  /** Aktionen liefern bei Erfolg die Server-Antwort, bei Fehlern undefined (der Fehler wird als Hinweis gezeigt). */
   actions: {
-    assignVillager: (villagerId: string, buildingId: string | null) => Promise<void>;
-    collect: (buildingId: string) => Promise<void>;
-    contribute: (projectId: string, resource: string, amount: number) => Promise<void>;
-    loadShip: (resource: string, amount: number) => Promise<void>;
-    unlockTech: (techKey: string) => Promise<void>;
+    assignVillager: (villagerId: string, buildingId: string | null) => Promise<unknown>;
+    collect: (buildingId: string) => Promise<{ moved: Inventory } | undefined>;
+    contribute: (projectId: string, resource: string, amount: number) => Promise<{ amount: number; completed: boolean } | undefined>;
+    loadShip: (resource: string, amount: number) => Promise<{ amount: number; completed: boolean } | undefined>;
+    unlockTech: (techKey: string) => Promise<{ name: string } | undefined>;
   };
 }
 
@@ -91,9 +93,12 @@ export function GameProvider({
     });
     socket.on('village:state', (state: VillageState) => setVillage(state));
     socket.on('valley:state', (state: ValleyState) => setValley(state));
-    socket.on('valley:event', (event: ValleyEvent) =>
-      setEvents((list) => [event, ...list].slice(0, 30)),
-    );
+    socket.on('valley:event', (event: ValleyEvent) => {
+      setEvents((list) => [event, ...list].slice(0, 30));
+      // Fertige Monumente und volle Schiffe feiert das ganze Tal hörbar mit.
+      if (event.icon === '🎉' || event.icon === '🏵️') sound.play('fanfare');
+      else if (event.icon === '⚓') sound.play('chime');
+    });
 
     return () => {
       socket.removeAllListeners();
@@ -115,11 +120,15 @@ export function GameProvider({
 
   // Fehler aus Aktionen als Hinweis anzeigen statt sie zu verschlucken
   const run = useCallback(
-    async (fn: () => Promise<unknown>) => {
+    async <T,>(fn: () => Promise<T>, success?: SoundName): Promise<T | undefined> => {
       try {
-        await fn();
+        const res = await fn();
+        if (success) sound.play(success);
+        return res;
       } catch (err) {
+        sound.play('error');
         notify((err as Error).message, 'error');
+        return undefined;
       }
     },
     [notify],
@@ -127,16 +136,19 @@ export function GameProvider({
 
   const actions = useMemo<GameApi['actions']>(() => ({
     assignVillager: (villagerId, buildingId) =>
-      run(() => emit('villager:assign', { villagerId, buildingId })),
-    collect: (buildingId) => run(() => emit('building:collect', { buildingId })),
+      run(() => emit('villager:assign', { villagerId, buildingId }), 'clack'),
+    collect: (buildingId) =>
+      run(() => emit<{ moved: Inventory }>('building:collect', { buildingId }), 'pop'),
     contribute: (projectId, resource, amount) =>
-      run(() => emit('project:contribute', { projectId, resource, amount })),
-    loadShip: (resource, amount) => run(() => emit('ship:load', { resource, amount })),
+      run(() => emit<{ amount: number; completed: boolean }>('project:contribute', { projectId, resource, amount }), 'clack'),
+    loadShip: (resource, amount) =>
+      run(() => emit<{ amount: number; completed: boolean }>('ship:load', { resource, amount }), 'clack'),
     unlockTech: (techKey) =>
       run(async () => {
         const res = await emit<{ name: string }>('research:unlock', { techKey });
         notify(`„${res.name}“ erforscht!`);
-      }),
+        return res;
+      }, 'chime'),
   }), [emit, run, notify]);
 
   // Siegel & Prestige aktuell halten (kommen über den Tal-Zustand)

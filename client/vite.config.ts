@@ -7,6 +7,8 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/',
   plugins: [react(), tailwindcss()],
+  // Three.js liegt in einem eigenen, nachgeladenen Chunk (3D-Dorf).
+  build: { chunkSizeWarningLimit: 1200 },
   server: {
     port: 5173,
     proxy: {

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useGame } from '../game/GameProvider';
+import { sound, useMuted } from '../lib/sound';
+import { FxOverlay } from './FxOverlay';
 import { ResearchPanel } from './research/ResearchPanel';
 import { ValleyView } from './valley/ValleyView';
 import { HomeVillage } from './village/HomeVillage';
@@ -11,29 +13,55 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
+function MuteButton() {
+  const muted = useMuted();
+  return (
+    <button
+      className="btn-ghost size-9 rounded-xl p-0 text-lg"
+      onClick={() => {
+        sound.setMuted(!muted);
+        if (muted) sound.play('pop');
+      }}
+      aria-pressed={muted}
+      title={muted ? 'Ton einschalten' : 'Ton ausschalten'}
+      aria-label={muted ? 'Ton einschalten' : 'Ton ausschalten'}
+    >
+      {muted ? '🔇' : '🔊'}
+    </button>
+  );
+}
+
 export function Shell() {
   const { me, connected, toasts, logout, valley } = useGame();
   const [tab, setTab] = useState<TabId>('village');
 
+  const switchTab = (id: TabId) => {
+    if (id !== tab) sound.play('tap');
+    setTab(id);
+  };
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4 pb-24 sm:pb-8">
-      <header className="flex flex-wrap items-center gap-3 py-4">
+    <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4 pb-28 sm:pb-8">
+      <header className="wood relative mt-3 flex flex-wrap items-center gap-3 rounded-[1.4rem] px-4 py-2.5">
+        {/* Nagelköpfe */}
+        {['left-2 top-2', 'right-2 top-2', 'left-2 bottom-2', 'right-2 bottom-2'].map((p) => (
+          <span key={p} className={`absolute ${p} size-1.5 rounded-full bg-gold-300 shadow-[0_1px_0_rgba(0,0,0,0.4)]`} />
+        ))}
         <div className="flex items-center gap-2">
-          <span className="text-3xl" aria-hidden>🍃</span>
+          <span className="text-3xl drop-shadow-[0_2px_0_rgba(0,0,0,0.3)]" aria-hidden>🍃</span>
           <div>
-            <h1 className="text-2xl leading-none font-bold text-moss-700">Mosswood</h1>
-            <p className="text-xs font-semibold text-bark-500">{valley ? valley.name : 'Tal wird geladen …'}</p>
+            <h1 className="text-outline text-2xl leading-none font-bold tracking-wide text-cream">Mosswood</h1>
+            <p className="text-xs font-bold text-gold-200">{valley ? valley.name : 'Tal wird geladen …'}</p>
           </div>
         </div>
 
-        <nav className="ml-6 hidden gap-1 rounded-2xl bg-parchment p-1 sm:flex">
+        <nav className="ml-4 hidden gap-2 sm:flex" aria-label="Bereiche">
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`rounded-xl px-4 py-1.5 font-display font-semibold transition ${
-                tab === t.id ? 'bg-cream text-moss-700 shadow-soft' : 'text-bark-600 hover:text-bark-900'
-              }`}
+              onClick={() => switchTab(t.id)}
+              aria-current={tab === t.id ? 'page' : undefined}
+              className={tab === t.id ? 'btn-honey px-4 py-1.5' : 'btn-ghost px-4 py-1.5'}
             >
               {t.icon} {t.label}
             </button>
@@ -41,35 +69,37 @@ export function Shell() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 text-sm font-bold">
-          <span className="chip bg-honey-200 text-bark-700" title="Siegel">🏵️ {me.seals}</span>
-          <span className="chip bg-moss-100 text-moss-700" title="Prestige">⭐ {me.prestige}</span>
+          <span className="chip bg-gold-200 text-bark-900" title="Siegel">🏵️ {me.seals}</span>
+          <span className="chip bg-moss-100 text-moss-800" title="Prestige">⭐ {me.prestige}</span>
           <span
-            className={`chip ${connected ? 'bg-moss-100 text-moss-700' : 'bg-clay-200 text-clay-500'}`}
+            className={`chip ${connected ? 'bg-moss-100 text-moss-800' : 'bg-clay-200 text-clay-500'}`}
             title={connected ? 'Verbunden' : 'Verbindung wird aufgebaut'}
           >
             <span className={`size-2 rounded-full ${connected ? 'bg-moss-500' : 'bg-clay-500'}`} />
             <span className="hidden sm:inline">{me.displayName}</span>
           </span>
-          <button className="text-xs text-bark-500 underline-offset-2 hover:underline" onClick={logout}>
+          <MuteButton />
+          <button className="text-xs font-bold text-gold-200 underline-offset-2 hover:underline" onClick={logout}>
             Abmelden
           </button>
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="mt-5 flex-1">
         {tab === 'village' && <HomeVillage />}
         {tab === 'valley' && <ValleyView />}
         {tab === 'research' && <ResearchPanel />}
       </main>
 
       {/* Mobile Tab-Leiste */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t-2 border-bark-900/10 bg-cream/95 px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+      <nav className="wood fixed inset-x-2 bottom-2 z-50 flex rounded-2xl px-1.5 pt-1.5 pb-[max(0.4rem,env(safe-area-inset-bottom))] sm:hidden" aria-label="Bereiche">
         {TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex flex-1 flex-col items-center rounded-xl py-1 text-xs font-bold ${
-              tab === t.id ? 'text-moss-700' : 'text-bark-500'
+            onClick={() => switchTab(t.id)}
+            aria-current={tab === t.id ? 'page' : undefined}
+            className={`flex flex-1 flex-col items-center rounded-xl py-1 font-display text-xs font-semibold ${
+              tab === t.id ? 'bg-gold-300 text-bark-900 shadow-[inset_0_1px_0_#fff8]' : 'text-outline text-cream'
             }`}
           >
             <span className="text-xl">{t.icon}</span>
@@ -78,19 +108,23 @@ export function Shell() {
         ))}
       </nav>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-30 flex flex-col items-center gap-2 px-4 sm:bottom-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4 sm:bottom-6">
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
-            className={`rounded-2xl px-4 py-2 text-sm font-bold shadow-lift ${
-              t.tone === 'error' ? 'bg-clay-500 text-white' : 'bg-moss-600 text-white'
+            className={`animate-pop-in rounded-2xl border-[3px] px-4 py-2 font-display text-sm font-semibold shadow-lift ${
+              t.tone === 'error'
+                ? 'border-clay-500 bg-clay-200 text-bark-900'
+                : 'border-moss-600 bg-moss-100 text-moss-900'
             }`}
           >
             {t.text}
           </div>
         ))}
       </div>
+
+      <FxOverlay />
     </div>
   );
 }

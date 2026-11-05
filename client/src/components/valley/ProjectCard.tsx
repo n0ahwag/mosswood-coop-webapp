@@ -1,5 +1,6 @@
 import { useGame } from '../../game/GameProvider';
 import type { ValleyProject } from '../../lib/types';
+import { ResourceIcon } from '../icons/ResourceIcon';
 import { ProgressBar } from '../ui';
 import { DepositControl } from './DepositControl';
 
@@ -14,7 +15,7 @@ export function ProjectCard({ project }: { project: ValleyProject }) {
   return (
     <article className={`card p-5 ${done ? 'opacity-80' : ''}`}>
       <header className="flex items-start gap-3">
-        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-honey-200 text-3xl" aria-hidden>
+        <span className="grid size-14 shrink-0 place-items-center slot text-3xl" aria-hidden>
           {project.icon}
         </span>
         <div className="min-w-0 flex-1">
@@ -46,7 +47,7 @@ export function ProjectCard({ project }: { project: ValleyProject }) {
             <li key={resource} className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
               <div>
                 <div className="mb-1 flex items-center justify-between text-sm font-bold">
-                  <span>{res?.icon} {res?.name ?? resource}</span>
+                  <span className="flex items-center gap-1.5"><ResourceIcon resource={resource} size={26} /> {res?.name ?? resource}</span>
                   <span className="tabular-nums text-bark-600">{have} / {required}</span>
                 </div>
                 <ProgressBar value={have} max={required} tone="moss" smooth />

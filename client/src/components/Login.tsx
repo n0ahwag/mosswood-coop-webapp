@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../lib/api';
+import { ValleyScenery } from './Scenery';
 
 export function Login({ onLogin }: { onLogin: (token: string) => void }) {
   const [name, setName] = useState('');
@@ -22,11 +23,12 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
   }
 
   return (
-    <main className="grid min-h-dvh place-items-center px-4 py-10">
-      <div className="w-full max-w-md">
+    <main className="relative grid min-h-dvh place-items-center overflow-hidden px-4 py-10">
+      <ValleyScenery className="pointer-events-none absolute inset-x-0 bottom-0 h-[45vh] w-full" />
+      <div className="relative w-full max-w-md">
         <div className="mb-6 text-center">
           <p className="animate-bob text-6xl" aria-hidden>🍃</p>
-          <h1 className="mt-2 text-5xl font-bold tracking-tight text-moss-700">Mosswood</h1>
+          <h1 className="mt-2 text-outline text-5xl font-bold tracking-wide text-cream">Mosswood</h1>
           <p className="mt-2 text-bark-600">
             Ein gemütliches Tal, das ihr gemeinsam aufbaut. Ohne Angriffe, ohne Eile.
           </p>
@@ -36,7 +38,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
           <label className="block">
             <span className="text-sm font-bold text-bark-700">Wie heißt du?</span>
             <input
-              className="mt-1 w-full rounded-2xl border-2 border-bark-900/10 bg-white px-4 py-2.5 outline-none focus:border-moss-400"
+              className="mt-1 w-full slot px-4 py-2.5 outline-none focus:border-moss-400"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="z. B. Juna"
@@ -49,7 +51,7 @@ export function Login({ onLogin }: { onLogin: (token: string) => void }) {
           <label className="block">
             <span className="text-sm font-bold text-bark-700">Einladungscode (optional)</span>
             <input
-              className="mt-1 w-full rounded-2xl border-2 border-bark-900/10 bg-white px-4 py-2.5 font-mono uppercase tracking-widest outline-none focus:border-moss-400"
+              className="mt-1 w-full slot px-4 py-2.5 font-mono uppercase tracking-widest outline-none focus:border-moss-400"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="ABC123"

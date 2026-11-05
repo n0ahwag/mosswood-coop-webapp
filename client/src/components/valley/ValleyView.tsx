@@ -1,4 +1,5 @@
 import { useGame } from '../../game/GameProvider';
+import { ValleyScenery } from '../Scenery';
 import { ProjectCard } from './ProjectCard';
 import { TradeShipCard } from './TradeShipCard';
 
@@ -25,16 +26,19 @@ export function ValleyView() {
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
         <section className="card overflow-hidden">
-          <div className="bg-gradient-to-br from-moss-400 to-moss-600 px-5 py-6 text-white">
-            <p className="text-sm font-bold opacity-80">Euer Tal</p>
-            <h2 className="text-3xl font-bold">{valley.name}</h2>
-            <p className="mt-1 text-sm opacity-90">
-              {valley.members.length} von {valley.maxMembers} Höfen bewohnt · {done.length} Monumente vollendet
-            </p>
+          <div className="relative h-44 overflow-hidden border-b-[3px] border-wood-600 sm:h-52">
+            <ValleyScenery className="absolute inset-0 h-full w-full" />
+            <div className="wood absolute top-3 left-3 rounded-2xl px-4 py-2">
+              <p className="text-xs font-bold text-gold-200">Euer Tal</p>
+              <h2 className="text-outline text-2xl leading-tight font-bold text-cream sm:text-3xl">{valley.name}</h2>
+              <p className="text-xs font-bold text-cream/90">
+                {valley.members.length} von {valley.maxMembers} Höfen · {done.length} Monumente vollendet
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 px-5 py-3">
             <span className="text-sm font-semibold text-bark-600">Lade Freunde ein:</span>
-            <code className="rounded-xl bg-parchment px-3 py-1 font-mono text-lg font-bold tracking-widest">
+            <code className="slot px-3 py-1 font-mono text-lg font-bold tracking-widest">
               {valley.inviteCode}
             </code>
             <button className="btn-ghost px-3 py-1 text-sm" onClick={copyCode}>Kopieren</button>

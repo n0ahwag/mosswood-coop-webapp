@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../../game/GameProvider';
+import { fx } from '../../lib/fx';
 import type { Building, BuildingStatus, Villager } from '../../lib/types';
 import { ProgressBar, ResourceList } from '../ui';
 import { avatarFor, VILLAGER_MIME } from './VillagerCard';
@@ -19,7 +20,7 @@ export function BuildingCard({
   selectedVillager: Villager | null;
   onAssign: (villagerId: string) => void;
   onUnassign: (villagerId: string) => void;
-  onCollect: () => void;
+  onCollect: () => Promise<{ moved: Record<string, number> } | undefined>;
 }) {
   const { content } = useGame();
   const def = content.buildings[building.type];
@@ -55,7 +56,7 @@ export function BuildingCard({
       }`}
     >
       <header className="flex items-start gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-parchment text-2xl" aria-hidden>
+        <span className="slot grid size-12 shrink-0 place-items-center text-2xl" aria-hidden>
           {def.icon}
         </span>
         <div className="min-w-0 flex-1">
@@ -67,7 +68,7 @@ export function BuildingCard({
         </div>
       </header>
 
-      <div className="flex items-center gap-2 rounded-2xl bg-parchment/70 px-3 py-1.5 text-sm font-bold">
+      <div className="slot flex items-center gap-2 px-3 py-1 text-sm font-bold">
         {Object.keys(def.inputs).length > 0 && (
           <>
             <ResourceList items={def.inputs} content={content} />
@@ -118,9 +119,12 @@ export function BuildingCard({
         <button
           className="btn-honey px-3 py-1.5 text-sm"
           disabled={stockTotal === 0}
-          onClick={(e) => {
+          onClick={async (e) => {
             e.stopPropagation();
-            onCollect();
+            const button = e.currentTarget;
+            const res = await onCollect();
+            const total = res ? Object.values(res.moved).reduce((a, b) => a + b, 0) : 0;
+            if (total > 0) fx.burstAt(button, `+${total}`);
           }}
         >
           Einsammeln
