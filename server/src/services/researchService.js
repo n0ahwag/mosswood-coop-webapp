@@ -2,7 +2,8 @@ import { TECHS } from '../game/content.js';
 import { computeEffects } from '../game/effects.js';
 import { hasResources, takeResources } from '../game/engine.js';
 import { GameError } from '../utils/errors.js';
-import { createVillager, mutateVillage } from './villageService.js';
+import { recordStat } from '../game/progression.js';
+import { createVillager, mutateVillage, requireFeature } from './villageService.js';
 
 export function unlockTech(user, techKey) {
   const tech = TECHS[techKey];
@@ -11,6 +12,7 @@ export function unlockTech(user, techKey) {
   return mutateVillage(
     user.village.id,
     async (snap, { tx }) => {
+      requireFeature(snap, tech.scope === 'valley' ? 'valleyResearch' : 'research');
       if (snap.techKeys.includes(techKey)) throw new GameError(`${tech.name} ist bereits erforscht`);
       for (const req of tech.requires) {
         if (!snap.techKeys.includes(req)) {
@@ -33,6 +35,7 @@ export function unlockTech(user, techKey) {
         throw err;
       }
       snap.techKeys.push(techKey);
+      recordStat(snap.stats, 'research', 1);
 
       // Neue Hütte → neuer Dorfbewohner
       const { villagerSlots } = computeEffects(snap.techKeys);

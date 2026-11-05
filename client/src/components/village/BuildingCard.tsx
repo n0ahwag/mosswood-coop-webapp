@@ -13,8 +13,9 @@ const STATUS: Record<BuildingStatus, { text: string; className: string }> = {
 };
 
 export function BuildingCard({
-  building, workers, selectedVillager, onAssign, onUnassign, onCollect,
+  id, building, workers, selectedVillager, onAssign, onUnassign, onCollect,
 }: {
+  id?: string;
   building: Building;
   workers: Villager[];
   selectedVillager: Villager | null;
@@ -35,6 +36,7 @@ export function BuildingCard({
 
   return (
     <article
+      id={id}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(VILLAGER_MIME) && freeSlots > 0) {
           e.preventDefault();

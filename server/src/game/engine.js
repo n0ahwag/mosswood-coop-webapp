@@ -104,7 +104,8 @@ export function stepVillager(v, dt, ctx) {
 }
 
 // Verschiebt fertige Waren aus dem Gebäude ins Dorflager (bis zur Kapazitätsgrenze).
-export function collectStock(building, inventory, storageCap) {
+// Mit `stats` wird mitgezählt, wie viel insgesamt eingesammelt wurde (für das Hofbuch).
+export function collectStock(building, inventory, storageCap, stats) {
   const moved = {};
   for (const [res, n] of Object.entries(building.stock)) {
     const space = Math.max(0, storageCap - (inventory[res] ?? 0));
@@ -113,6 +114,10 @@ export function collectStock(building, inventory, storageCap) {
     building.stock[res] = n - amount;
     inventory[res] = (inventory[res] ?? 0) + amount;
     moved[res] = amount;
+    if (stats) {
+      stats.collected ??= {};
+      stats.collected[res] = (stats.collected[res] ?? 0) + amount;
+    }
   }
   return moved;
 }
@@ -129,9 +134,9 @@ export function stepBuilding(b, dt, ctx) {
     b.status = 'idle';
     return;
   }
-  const { inventory, effects, storageCap, workers } = ctx;
+  const { inventory, effects, storageCap, workers, stats } = ctx;
 
-  if (effects.autoCollect) collectStock(b, inventory, storageCap);
+  if (effects.autoCollect) collectStock(b, inventory, storageCap, stats);
   if (isStockFull(b, def)) {
     b.status = 'full';
     return;
@@ -161,7 +166,7 @@ export function stepBuilding(b, dt, ctx) {
     addResources(b.stock, def.outputs);
     b.progress = Math.min(b.progress - def.durationSec, def.durationSec - 0.001);
     b.loaded = false;
-    if (effects.autoCollect) collectStock(b, inventory, storageCap);
+    if (effects.autoCollect) collectStock(b, inventory, storageCap, stats);
   }
 }
 
@@ -176,6 +181,7 @@ export function tickVillage(snap, dt, effects) {
     effects,
     storageCap: effectiveStorageCap(snap, effects),
     workers: new Map(),
+    stats: (snap.stats ??= {}),
   };
 
   for (const v of snap.villagers) stepVillager(v, dt, ctx);

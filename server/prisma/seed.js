@@ -6,10 +6,11 @@ import { createPlayer } from '../src/services/authService.js';
 const NEIGHBOURS = ['Bo', 'Mika', 'Lene'];
 
 async function main() {
-  const first = await createPlayer({ displayName: 'Ida' });
+  // Die Demo-Nachbarn haben das Hofbuch schon hinter sich.
+  const first = await createPlayer({ displayName: 'Ida', skipTutorial: true });
   const code = first.valley.inviteCode;
   for (const displayName of NEIGHBOURS) {
-    await createPlayer({ displayName, inviteCode: code });
+    await createPlayer({ displayName, inviteCode: code, skipTutorial: true });
   }
 
   // Den Demo-Nachbarn etwas Vorrat geben, damit Projekte schon Fortschritt zeigen können.

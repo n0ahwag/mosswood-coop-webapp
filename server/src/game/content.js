@@ -188,7 +188,96 @@ export const SHIP_DEMAND_POOL = [
 ];
 export const SHIP_REWARD = { seals: 3, prestige: 10 };
 
-export const STARTER_INVENTORY = { wood: 20, berries: 20, wheat: 10, meals: 6 };
+// ---------- Fortschritt: das Hofbuch ----------
+// Neue Spieler starten klein. Jede Aufgabe bringt eine Spielmechanik bei und
+// schaltet beim Abschluss Gebäude, Bereiche (features) oder Vorräte frei.
+
+export const STARTER_BUILDINGS = ['berryFarm'];
+export const STARTER_INVENTORY = { berries: 12 };
+
+export const FEATURES = {
+  research: { name: 'Forschung', icon: '📜' },
+  valley: { name: 'Gemeinschaftsprojekte', icon: '🏞️' },
+  ship: { name: 'Handelsschiff', icon: '⛵' },
+  valleyResearch: { name: 'Tal-Forschung', icon: '🛤️' },
+};
+
+// goal.type: assign (Bewohner in Gebäude), collect (Ware einsammeln),
+// research (Technik erforschen), contribute (in Tal-Projekte einzahlen), shipLoad.
+export const QUESTS = [
+  {
+    key: 'firstWork', icon: '🫐', title: 'Ein neuer Anfang',
+    text: 'Deine zwei Bewohner warten auf dem Dorfplatz. Tippe eine Person an und dann die Beerenfarm.',
+    goal: { type: 'assign', building: 'berryFarm', amount: 1 },
+    reward: {},
+  },
+  {
+    key: 'firstHarvest', icon: '🧺', title: 'Erste Ernte',
+    text: 'Fertige Waren sammeln sich im Vorrat des Gebäudes. Tippe auf „Einsammeln“, bis 6 Beeren in deinem Lager sind.',
+    goal: { type: 'collect', resource: 'berries', amount: 6 },
+    reward: { buildings: ['lumberCamp'] },
+  },
+  {
+    key: 'chopWood', icon: '🪓', title: 'Holz für den Hof',
+    text: 'Die Holzfällerhütte steht! Schick deinen zweiten Bewohner hin und sammle 10 Holz.',
+    goal: { type: 'collect', resource: 'wood', amount: 10 },
+    reward: { buildings: ['wheatField'] },
+  },
+  {
+    key: 'wheat', icon: '🌾', title: 'Goldene Ähren',
+    text: 'Wer arbeitet, bekommt Hunger und isst Beeren aus dem Lager. Für richtige Mahlzeiten brauchst du Weizen: Ernte 6 Stück.',
+    goal: { type: 'collect', resource: 'wheat', amount: 6 },
+    reward: { buildings: ['kitchen'] },
+  },
+  {
+    key: 'cook', icon: '🥧', title: 'Warme Mahlzeit',
+    text: 'Die Küche macht aus 2 Beeren und 1 Weizen zwei Mahlzeiten. Sie sättigen viel besser als Beeren. Koche 4 Mahlzeiten.',
+    goal: { type: 'collect', resource: 'meals', amount: 4 },
+    reward: { buildings: ['sawmill'], resources: { meals: 4 } },
+  },
+  {
+    key: 'planks', icon: '🪚', title: 'Bretter sägen',
+    text: 'Das Sägewerk sägt aus 2 Holz eine Planke. Planken brauchst du für fast alles. Säge 5 Stück.',
+    goal: { type: 'collect', resource: 'planks', amount: 5 },
+    reward: { buildings: ['quarry'], features: ['research'] },
+  },
+  {
+    key: 'stone', icon: '⛏️', title: 'Steine brechen',
+    text: 'Im neuen Steinbruch gibt es Stein. Sammle 10 Stück.',
+    goal: { type: 'collect', resource: 'stone', amount: 10 },
+    reward: { buildings: ['clayPit'] },
+  },
+  {
+    key: 'firstResearch', icon: '📜', title: 'Kluge Köpfe',
+    text: 'Im Forschungsbuch verbesserst du deinen Hof dauerhaft. Erforsche eine Technik, zum Beispiel „Geschärfte Äxte“.',
+    goal: { type: 'research', amount: 1 },
+    reward: { buildings: ['brickKiln'] },
+  },
+  {
+    key: 'bricks', icon: '🔥', title: 'Ziegel brennen',
+    text: 'Die Ziegelbrennerei brennt aus 2 Lehm einen Ziegel. Brenne 5 Ziegel.',
+    goal: { type: 'collect', resource: 'bricks', amount: 5 },
+    reward: { features: ['valley'], resources: { planks: 10 } },
+  },
+  {
+    key: 'helpValley', icon: '🌉', title: 'Gemeinsam stark',
+    text: 'Dein Tal baut an großen Monumenten. Zahle im Bereich „Das Tal“ insgesamt 10 Waren in ein Projekt ein.',
+    goal: { type: 'contribute', amount: 10 },
+    reward: { buildings: ['flaxField', 'weavery'] },
+  },
+  {
+    key: 'cloth', icon: '🧶', title: 'Feine Stoffe',
+    text: 'Vom Flachsfeld kommen Fasern, die Weberei macht aus 3 Fasern einen Stoff. Webe 3 Stoffe.',
+    goal: { type: 'collect', resource: 'cloth', amount: 3 },
+    reward: { features: ['ship'] },
+  },
+  {
+    key: 'tradeShip', icon: '⛵', title: 'Ahoi!',
+    text: 'Das Handelsschiff kommt regelmäßig ins Tal. Lade 5 Waren auf, während es im Hafen liegt.',
+    goal: { type: 'shipLoad', amount: 5 },
+    reward: { features: ['valleyResearch'], resources: { meals: 10 } },
+  },
+];
 
 export const VILLAGER_NAMES = [
   'Ida', 'Bo', 'Mika', 'Lene', 'Finn', 'Wiebke', 'Jasper', 'Romy', 'Ole', 'Pia',
@@ -209,5 +298,7 @@ export function getPublicContent() {
     ),
     villagerRules: VILLAGER_RULES,
     projects: VALLEY_PROJECTS,
+    quests: QUESTS,
+    features: FEATURES,
   };
 }

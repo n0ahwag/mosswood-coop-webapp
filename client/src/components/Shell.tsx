@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useGame } from '../game/GameProvider';
+import { featureUnlock, hasFeature } from '../game/progression';
 import { sound, useMuted } from '../lib/sound';
+import type { FeatureKey } from '../lib/types';
 import { FxOverlay } from './FxOverlay';
+import { LockedFeature } from './QuestPanel';
 import { ResearchPanel } from './research/ResearchPanel';
 import { ValleyView } from './valley/ValleyView';
 import { HomeVillage } from './village/HomeVillage';
@@ -12,6 +15,13 @@ const TABS = [
   { id: 'research', label: 'Forschung', icon: '📜' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
+
+// Welcher Bereich muss im Hofbuch freigeschaltet sein?
+const TAB_FEATURE: Record<TabId, FeatureKey | null> = { village: null, valley: 'valley', research: 'research' };
+const LOCKED_TEXT: Record<'valley' | 'research', string> = {
+  valley: 'Hier baut ihr gemeinsam an großen Monumenten und beladet das Handelsschiff. Kümmere dich erst um deinen eigenen Hof.',
+  research: 'Im Forschungsbuch verbesserst du später Werkzeuge, Lager und Hütten. Erst braucht dein Hof ein paar Planken.',
+};
 
 function MuteButton() {
   const muted = useMuted();
@@ -32,8 +42,21 @@ function MuteButton() {
 }
 
 export function Shell() {
-  const { me, connected, toasts, logout, valley } = useGame();
+  const { me, connected, toasts, logout, valley, village, content } = useGame();
   const [tab, setTab] = useState<TabId>('village');
+  const isLocked = (id: TabId) => {
+    const f = TAB_FEATURE[id];
+    return !!f && !!village && !hasFeature(village, f);
+  };
+  const lockedView = (id: 'valley' | 'research') => {
+    const { index, quest } = featureUnlock(content, id);
+    const t = TABS.find((x) => x.id === id)!;
+    return (
+      <LockedFeature icon={t.icon} title={t.label} questIndex={index} questTitle={quest?.title}>
+        {LOCKED_TEXT[id]}
+      </LockedFeature>
+    );
+  };
 
   const switchTab = (id: TabId) => {
     if (id !== tab) sound.play('tap');
@@ -62,8 +85,9 @@ export function Shell() {
               onClick={() => switchTab(t.id)}
               aria-current={tab === t.id ? 'page' : undefined}
               className={tab === t.id ? 'btn-honey px-4 py-1.5' : 'btn-ghost px-4 py-1.5'}
+              title={isLocked(t.id) ? 'Noch gesperrt – siehe Hofbuch' : undefined}
             >
-              {t.icon} {t.label}
+              {t.icon} {t.label}{isLocked(t.id) && ' 🔒'}
             </button>
           ))}
         </nav>
@@ -86,9 +110,12 @@ export function Shell() {
       </header>
 
       <main className="mt-5 flex-1">
-        {tab === 'village' && <HomeVillage />}
-        {tab === 'valley' && <ValleyView />}
-        {tab === 'research' && <ResearchPanel />}
+        {/* Das Dorf bleibt eingehängt, damit die 3D-Szene beim Tab-Wechsel nicht neu aufgebaut wird. */}
+        <div hidden={tab !== 'village'}>
+          <HomeVillage visible={tab === 'village'} />
+        </div>
+        {tab === 'valley' && (isLocked('valley') ? lockedView('valley') : <ValleyView />)}
+        {tab === 'research' && (isLocked('research') ? lockedView('research') : <ResearchPanel />)}
       </main>
 
       {/* Mobile Tab-Leiste */}
@@ -103,7 +130,7 @@ export function Shell() {
             }`}
           >
             <span className="text-xl">{t.icon}</span>
-            {t.label}
+            {t.label}{isLocked(t.id) && ' 🔒'}
           </button>
         ))}
       </nav>

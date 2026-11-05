@@ -2,11 +2,12 @@ import { useGame } from '../../game/GameProvider';
 import type { Inventory } from '../../lib/types';
 import { ResourceIcon } from '../icons/ResourceIcon';
 
-export function InventoryBar({ inventory, cap }: { inventory: Inventory; cap: number }) {
+export function InventoryBar({ inventory, cap, only }: { inventory: Inventory; cap: number; only?: Set<string> }) {
   const { content } = useGame();
+  const entries = Object.entries(content.resources).filter(([key]) => !only || only.has(key));
   return (
     <div className="card grid grid-cols-5 gap-1.5 p-2 sm:gap-2 sm:p-3 xl:grid-cols-10">
-      {Object.entries(content.resources).map(([key, res]) => {
+      {entries.map(([key, res]) => {
         const amount = inventory[key] ?? 0;
         const full = amount >= cap;
         return (

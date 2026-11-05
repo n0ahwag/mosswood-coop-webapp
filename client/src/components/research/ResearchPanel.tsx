@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../../game/GameProvider';
+import { featureUnlock, hasFeature } from '../../game/progression';
 import type { TechDef } from '../../lib/types';
 import { ResourceList } from '../ui';
 
@@ -32,6 +33,12 @@ export function ResearchPanel() {
             <h2 className="text-2xl font-semibold">{g.title}</h2>
             <span className="text-sm text-bark-500">{g.hint}</span>
           </div>
+          {g.scope === 'valley' && !hasFeature(village, 'valleyResearch') ? (
+            <p className="slot px-4 py-3 text-sm font-bold text-bark-600">
+              🔒 Tal-Forschung wird mit Aufgabe {featureUnlock(content, 'valleyResearch').index + 1} im Hofbuch frei
+              („{featureUnlock(content, 'valleyResearch').quest?.title}“).
+            </p>
+          ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {techs.filter((t) => t.scope === g.scope).map((t) => {
               const done = unlocked.has(t.key);
@@ -69,6 +76,7 @@ export function ResearchPanel() {
               );
             })}
           </div>
+          )}
         </section>
       ))}
     </div>

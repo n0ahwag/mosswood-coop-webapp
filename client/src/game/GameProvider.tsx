@@ -3,6 +3,7 @@ import {
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { api, ApiError, SERVER_URL } from '../lib/api';
+import { fx } from '../lib/fx';
 import { sound, type SoundName } from '../lib/sound';
 import type {
   Ack, GameContent, Inventory, Me, ValleyEvent, ValleyState, VillageState,
@@ -150,6 +151,25 @@ export function GameProvider({
         return res;
       }, 'chime'),
   }), [emit, run, notify]);
+
+  // Hofbuch: abgeschlossene Aufgaben feiern und neu Freigeschaltetes ansagen
+  const lastStep = useRef<number | null>(null);
+  const questStep = village?.progression.step;
+  useEffect(() => {
+    if (questStep == null || !content) return;
+    const prev = lastStep.current;
+    lastStep.current = questStep;
+    if (prev === null || questStep <= prev) return;
+    for (const quest of content.quests.slice(prev, questStep)) {
+      const unlocked = [
+        ...(quest.reward.buildings ?? []).map((b) => content.buildings[b]?.name),
+        ...(quest.reward.features ?? []).map((f) => content.features[f]?.name),
+      ].filter(Boolean);
+      notify(`✔ ${quest.title} geschafft!${unlocked.length ? ` Neu: ${unlocked.join(', ')}` : ''}`);
+    }
+    sound.play('fanfare');
+    fx.emit({ type: 'screen', x: window.innerWidth / 2, y: window.innerHeight * 0.3, label: '🎉 Aufgabe geschafft', tone: 'gold' });
+  }, [questStep, content, notify]);
 
   // Siegel & Prestige aktuell halten (kommen über den Tal-Zustand)
   const liveMe = useMemo(() => {

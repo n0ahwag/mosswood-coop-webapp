@@ -3,10 +3,12 @@
 
 import { OrbitControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { HtmlPortalContext } from './htmlPortal';
 import * as THREE from 'three';
 import type { GameContent, VillageState } from '../lib/types';
 import { BuildingPlot, DiningTable, Homes } from './Buildings';
+import { ConstructionSite } from './ConstructionSite';
 import { Effects } from './Effects';
 import {
   HOME_SLOTS, homeSpot, plazaSpot, PLOTS, TABLE_POS, tableSpot, workSpot,
@@ -17,6 +19,8 @@ import {
 import { Villager3D, type VillagerPlan } from './Villager3D';
 
 export interface VillageSceneProps {
+  /** false = Szene ist versteckt; dann wird nicht gerendert. */
+  active?: boolean;
   village: VillageState;
   content: GameContent;
   selectedVillagerId: string | null;
@@ -42,7 +46,7 @@ function AdaptiveCamera() {
 }
 
 export default function VillageScene({
-  village, content, selectedVillagerId, selectedBuildingId,
+  active = true, village, content, selectedVillagerId, selectedBuildingId,
   onSelectVillager, onBuildingClick, onCollect, onBackgroundClick,
 }: VillageSceneProps) {
   const plans = useMemo(() => {
@@ -86,11 +90,15 @@ export default function VillageScene({
     return out;
   }, [village.buildings, village.villagers, content.buildings]);
 
+  const portalRef = useRef<HTMLDivElement>(null);
   const homeCount = Math.min(HOME_SLOTS.length, Math.max(2, village.villagers.length));
   const selectedVillager = village.villagers.find((v) => v.id === selectedVillagerId) ?? null;
 
   return (
+    <div ref={portalRef} className="relative h-full w-full">
+    <HtmlPortalContext.Provider value={portalRef as RefObject<HTMLElement>}>
     <Canvas
+      frameloop={active ? 'always' : 'never'}
       shadows
       dpr={[1, 1.5]}
       camera={{ position: [14, 15, 17.5], fov: 34, near: 0.5, far: 220 }}
@@ -181,7 +189,25 @@ export default function VillageScene({
         );
       })}
 
+      {village.progression.locked.map((l) => {
+        const def = content.buildings[l.type];
+        if (!def) return null;
+        // Nur die nächsten paar Bauplätze zeigen, damit die Insel nicht nach Baustelle aussieht.
+        if (l.questIndex > village.progression.step + 3) return null;
+        return (
+          <ConstructionSite
+            key={l.type}
+            type={l.type}
+            def={def}
+            questIndex={l.questIndex}
+            isNext={l.questIndex === village.progression.step}
+          />
+        );
+      })}
+
       <Effects buildings={village.buildings} />
     </Canvas>
+    </HtmlPortalContext.Provider>
+    </div>
   );
 }

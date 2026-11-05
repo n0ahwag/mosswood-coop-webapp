@@ -1,7 +1,10 @@
 import { prisma, Prisma, withRetry } from '../db.js';
 import { config } from '../config.js';
-import { BUILDINGS, VILLAGER_NAMES } from '../game/content.js';
+import { BUILDINGS, FEATURES, QUESTS, VILLAGER_NAMES } from '../game/content.js';
 import { computeEffects } from '../game/effects.js';
+import {
+  advanceQuests, serializeProgression, unlockQuestIndex, unlocksAt,
+} from '../game/progression.js';
 import {
   collectStock, effectiveStorageCap, simulateVillage, tickVillage,
 } from '../game/engine.js';
@@ -39,6 +42,9 @@ export async function loadSnapshot(db, villageId) {
     inventory: { ...village.inventory },
     baseStorageCap: village.storageCap,
     lastTickAt: village.lastTickAt.getTime(),
+    questStep: village.questStep,
+    stats: structuredClone(village.stats ?? {}),
+    questBase: structuredClone(village.questBase ?? {}),
     buildings: village.buildings.map((b) => ({
       id: b.id,
       type: b.type,
@@ -65,7 +71,13 @@ export async function loadSnapshot(db, villageId) {
 async function persistSnapshot(db, snap) {
   await db.village.update({
     where: { id: snap.id },
-    data: { inventory: snap.inventory, lastTickAt: new Date(snap.lastTickAt) },
+    data: {
+      inventory: snap.inventory,
+      lastTickAt: new Date(snap.lastTickAt),
+      questStep: snap.questStep,
+      stats: snap.stats,
+      questBase: snap.questBase,
+    },
   });
   for (const b of snap.buildings) {
     await db.building.update({
@@ -95,6 +107,7 @@ export function serializeVillage(snap, effects) {
     storageCap: effectiveStorageCap(snap, effects),
     villagerSlots: effects.villagerSlots,
     techKeys: [...new Set(snap.techKeys)],
+    progression: serializeProgression(snap),
     buildings: snap.buildings.map((b) => ({
       id: b.id,
       type: b.type,
@@ -129,10 +142,15 @@ export function mutateVillage(villageId, fn, { serializable = false } = {}) {
 
           const result = fn ? await fn(snap, { tx }) : undefined;
 
+          // Hofbuch: erfüllte Aufgaben abschließen und freigeschaltete Gebäude bauen.
+          const { completed } = advanceQuests(snap);
+          await ensureUnlockedBuildings(tx, snap);
+          if (completed.length) snap.completedQuests = completed;
+
           const effects = computeEffects(snap.techKeys);
           tickVillage(snap, 0, effects); // Status nach der Aktion aktualisieren
           await persistSnapshot(tx, snap);
-          return { state: serializeVillage(snap, effects), result };
+          return { state: serializeVillage(snap, effects), result, completedQuests: snap.completedQuests ?? [] };
         },
         {
           timeout: 15_000,
@@ -141,6 +159,26 @@ export function mutateVillage(villageId, fn, { serializable = false } = {}) {
       ),
     ),
   );
+}
+
+/** Legt fehlende Gebäude an, die laut Hofbuch schon freigeschaltet sind. */
+export async function ensureUnlockedBuildings(tx, snap) {
+  const have = new Set(snap.buildings.map((b) => b.type));
+  for (const type of unlocksAt(snap.questStep).buildings) {
+    if (have.has(type) || !BUILDINGS[type]) continue;
+    const b = await tx.building.create({ data: { villageId: snap.id, type } });
+    snap.buildings.push({
+      id: b.id, type: b.type, level: b.level, progress: 0, loaded: false, stock: {}, status: 'idle',
+    });
+  }
+}
+
+/** Wirft einen verständlichen Fehler, wenn ein Bereich noch gesperrt ist. */
+export function requireFeature(snap, feature) {
+  if (unlocksAt(snap.questStep).features.has(feature)) return;
+  const index = unlockQuestIndex('feature', feature);
+  const name = FEATURES[feature]?.name ?? feature;
+  throw new GameError(`${name} schaltest du mit der Aufgabe „${QUESTS[index]?.title}“ im Hofbuch frei`, 'LOCKED', 403);
 }
 
 export async function createVillager(tx, snap) {
@@ -193,7 +231,7 @@ export function collectBuilding(villageId, buildingId) {
     if (!hasStock) throw new GameError('Hier gibt es noch nichts einzusammeln');
 
     const cap = effectiveStorageCap(snap, computeEffects(snap.techKeys));
-    const moved = collectStock(building, snap.inventory, cap);
+    const moved = collectStock(building, snap.inventory, cap, snap.stats);
     if (Object.keys(moved).length === 0) throw new GameError('Dein Lager ist voll');
     return { moved };
   });

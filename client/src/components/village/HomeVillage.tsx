@@ -4,6 +4,7 @@ import {
 import { useGame } from '../../game/GameProvider';
 import { fx } from '../../lib/fx';
 import type { BuildingDef } from '../../lib/types';
+import { QuestPanel } from '../QuestPanel';
 import { BuildingCard } from './BuildingCard';
 import { InventoryBar } from './InventoryBar';
 import { VILLAGER_MIME, VillagerCard } from './VillagerCard';
@@ -49,16 +50,18 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
   }
 }
 
-export function HomeVillage() {
+export function HomeVillage({ visible = true }: { visible?: boolean }) {
   const { village, content, actions } = useGame();
   const [selected, setSelected] = useState<string | null>(null);
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [plazaHover, setPlazaHover] = useState(false);
   const webgl = useMemo(hasWebGL, []);
   const [view, setViewState] = useState<View>(() => (webgl ? readView() : 'cards'));
+  const [sceneMounted, setSceneMounted] = useState(view === '3d');
 
   const setView = (v: View) => {
     setViewState(v);
+    if (v === '3d') setSceneMounted(true);
     try {
       localStorage.setItem(VIEW_KEY, v);
     } catch {
@@ -68,6 +71,12 @@ export function HomeVillage() {
 
   if (!village) {
     return <p className="py-20 text-center font-display text-xl text-bark-500">Dein Hof wird geladen …</p>;
+  }
+
+  // Nur Rohstoffe anzeigen, die der Hof schon herstellen kann oder besitzt.
+  const knownResources = new Set(Object.keys(village.inventory).filter((r) => (village.inventory[r] ?? 0) > 0));
+  for (const b of village.buildings) {
+    for (const r of Object.keys(content.buildings[b.type]?.outputs ?? {})) knownResources.add(r);
   }
 
   const villagerById = new Map(village.villagers.map((v) => [v.id, v]));
@@ -109,6 +118,7 @@ export function HomeVillage() {
     if (!b) return null;
     return (
       <BuildingCard
+        id={`building-${b.type}`}
         key={b.id}
         building={b}
         workers={b.workerIds.map((wid) => villagerById.get(wid)!).filter(Boolean)}
@@ -202,12 +212,21 @@ export function HomeVillage() {
             )}
           </div>
         </div>
-        <InventoryBar inventory={village.inventory} cap={village.storageCap} />
+        <InventoryBar inventory={village.inventory} cap={village.storageCap} only={knownResources} />
       </section>
 
-      {view === '3d' ? (
-        <>
-          <section className="card relative overflow-hidden p-1.5">
+      <QuestPanel
+        onShowBuilding={(type) => {
+          const b = village.buildings.find((x) => x.type === type);
+          if (b) setSelectedBuilding(b.id);
+          if (view === 'cards') document.getElementById(`building-${type}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }}
+      />
+
+      {/* Die 3D-Szene bleibt nach dem ersten Öffnen eingehängt und wird nur versteckt und angehalten.
+          Ein Aushängen würde die Namensschilder (eigene React-Wurzeln) mitten im Rendern abbauen. */}
+      {sceneMounted && (
+          <section className={`card relative overflow-hidden p-1.5 ${view === '3d' ? '' : 'hidden'}`}>
             <div className="relative h-[58vh] max-h-[680px] min-h-[340px] overflow-hidden rounded-[1.05rem] bg-[linear-gradient(180deg,#9fd6ee_0%,#cfeaf1_45%,#f6efd6_100%)]">
               <SceneBoundary fallback={cardsFallback}>
                 <Suspense
@@ -218,6 +237,7 @@ export function HomeVillage() {
                   }
                 >
                   <VillageScene
+                    active={visible && view === '3d'}
                     village={village}
                     content={content}
                     selectedVillagerId={selected}
@@ -246,7 +266,10 @@ export function HomeVillage() {
               </div>
             </div>
           </section>
+      )}
 
+      {view === '3d' ? (
+        <>
           <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
             {villagersPanel}
             <div>
@@ -281,6 +304,29 @@ export function HomeVillage() {
               </section>
             );
           })}
+          {village.progression.locked.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-baseline gap-2">
+                <h3 className="text-lg font-semibold">Bauplätze</h3>
+                <span className="text-sm text-bark-500">Werden nach und nach über das Hofbuch frei</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                {village.progression.locked.map((l) => {
+                  const def = content.buildings[l.type];
+                  const next = l.questIndex === village.progression.step;
+                  return (
+                    <div key={l.type} className={`slot p-3 text-center ${next ? 'ring-4 ring-gold-300' : 'opacity-75'}`}>
+                      <div className="text-2xl grayscale-[60%]" aria-hidden>{def?.icon}</div>
+                      <div className="font-display font-semibold">🔒 {def?.name}</div>
+                      <div className="text-[11px] font-bold text-bark-500">
+                        {next ? 'Als Nächstes' : `Aufgabe ${l.questIndex + 1}`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>

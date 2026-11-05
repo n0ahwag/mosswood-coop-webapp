@@ -3,6 +3,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { Villager } from '../lib/types';
+import { useHtmlPortal } from './htmlPortal';
 import { hashString, type Vec2 } from './layout';
 import { C } from './palette';
 
@@ -76,6 +77,7 @@ export function Villager3D({
     };
   }, [villager.id]);
 
+  const portal = useHtmlPortal();
   const root = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
@@ -422,7 +424,7 @@ export function Villager3D({
       </group>
 
       {/* Html bleibt immer eingehängt: Ein- und Aushängen löst sonst React-Warnungen aus. */}
-      <Html position={[0, 1.85, 0]} center distanceFactor={9} zIndexRange={[40, 0]}>
+      <Html portal={portal} position={[0, 1.85, 0]} center distanceFactor={9} zIndexRange={[40, 0]}>
         {(bubble || selected) && (
           <div className={`scene-bubble ${selected ? 'is-selected' : ''}`}>
             {bubble && <span className="text-base leading-none">{bubble}</span>}

@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { prisma } from '../db.js';
 import {
-  BUILDINGS, STARTER_INVENTORY, VALLEY_NAME_PARTS, VALLEY_PROJECTS, VILLAGER_NAMES,
-  VILLAGER_RULES,
+  BUILDINGS, QUESTS, STARTER_BUILDINGS, STARTER_INVENTORY, VALLEY_NAME_PARTS, VALLEY_PROJECTS,
+  VILLAGER_NAMES, VILLAGER_RULES,
 } from '../game/content.js';
 import { GameError, pick } from '../utils/errors.js';
 
@@ -52,13 +52,17 @@ async function findOrCreateValley(tx, inviteCode) {
   return valleys.find((v) => v._count.members < v.maxMembers) ?? createValley(tx);
 }
 
-async function createStarterVillage(tx, user) {
+// Neue Höfe starten nur mit der Beerenfarm; der Rest kommt über das Hofbuch.
+// skipTutorial (nur für Demo-Daten) überspringt die Aufgabenkette.
+async function createStarterVillage(tx, user, { skipTutorial = false } = {}) {
+  const types = skipTutorial ? Object.keys(BUILDINGS) : STARTER_BUILDINGS;
   const village = await tx.village.create({
     data: {
       name: `Hof von ${user.displayName}`,
       ownerId: user.id,
       inventory: STARTER_INVENTORY,
-      buildings: { create: Object.keys(BUILDINGS).map((type) => ({ type })) },
+      questStep: skipTutorial ? QUESTS.length : 0,
+      buildings: { create: types.map((type) => ({ type })) },
     },
   });
   const names = [...VILLAGER_NAMES].sort(() => Math.random() - 0.5);
@@ -68,14 +72,14 @@ async function createStarterVillage(tx, user) {
   return village;
 }
 
-export async function createPlayer({ displayName, inviteCode }) {
+export async function createPlayer({ displayName, inviteCode, skipTutorial = false }) {
   const token = crypto.randomBytes(32).toString('base64url');
   return prisma.$transaction(async (tx) => {
     const valley = await findOrCreateValley(tx, inviteCode);
     const user = await tx.user.create({
       data: { displayName, sessionTokenHash: hashToken(token), valleyId: valley.id },
     });
-    const village = await createStarterVillage(tx, user);
+    const village = await createStarterVillage(tx, user, { skipTutorial });
     return { token, user, valley, village };
   });
 }

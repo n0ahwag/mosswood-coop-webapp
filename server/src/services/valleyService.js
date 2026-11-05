@@ -5,7 +5,8 @@ import {
 } from '../game/content.js';
 import { GameError } from '../utils/errors.js';
 import { withLock } from '../utils/lock.js';
-import { mutateVillage } from './villageService.js';
+import { recordStat } from '../game/progression.js';
+import { mutateVillage, requireFeature } from './villageService.js';
 
 const MIN = 60_000;
 
@@ -143,6 +144,7 @@ export function contributeToProject(user, { projectId, resource, amount }) {
   return mutateVillage(
     user.village.id,
     async (snap, { tx }) => {
+      requireFeature(snap, 'valley');
       const project = await tx.valleyProject.findUnique({ where: { id: projectId } });
       if (!project || project.valleyId !== user.valleyId) {
         throw new GameError('Projekt nicht gefunden', 'NOT_FOUND', 404);
@@ -159,6 +161,7 @@ export function contributeToProject(user, { projectId, resource, amount }) {
       if (actual <= 0) throw new GameError(`Du hast keine ${RESOURCES[resource].name} im Lager`);
 
       snap.inventory[resource] = have - actual;
+      recordStat(snap.stats, 'contributed', actual);
       const progress = { ...project.progress, [resource]: current + actual };
       const completed = Object.entries(project.requirements).every(
         ([res, n]) => (progress[res] ?? 0) >= n,
@@ -192,6 +195,7 @@ export async function loadShip(user, { resource, amount }) {
   return mutateVillage(
     user.village.id,
     async (snap, { tx }) => {
+      requireFeature(snap, 'ship');
       const ship = await tx.tradeShip.findFirst({
         where: { valleyId: user.valleyId, status: 'DOCKED' },
         orderBy: { arrivesAt: 'desc' },
@@ -210,6 +214,7 @@ export async function loadShip(user, { resource, amount }) {
       if (actual <= 0) throw new GameError(`Du hast keine ${RESOURCES[resource].name} im Lager`);
 
       snap.inventory[resource] = have - actual;
+      recordStat(snap.stats, 'shipLoaded', actual);
       const progress = { ...ship.progress, [resource]: current + actual };
       const completed = ship.demands.every((d) => (progress[d.resource] ?? 0) >= d.amount);
 

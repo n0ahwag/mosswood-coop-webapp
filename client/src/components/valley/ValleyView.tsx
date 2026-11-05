@@ -1,10 +1,11 @@
 import { useGame } from '../../game/GameProvider';
+import { featureUnlock, hasFeature } from '../../game/progression';
 import { ValleyScenery } from '../Scenery';
 import { ProjectCard } from './ProjectCard';
 import { TradeShipCard } from './TradeShipCard';
 
 export function ValleyView() {
-  const { valley, events, me, notify } = useGame();
+  const { valley, village, content, events, me, notify } = useGame();
 
   if (!valley) {
     return <p className="py-20 text-center font-display text-xl text-bark-500">Das Tal wird geladen …</p>;
@@ -45,7 +46,17 @@ export function ValleyView() {
           </div>
         </section>
 
-        <TradeShipCard ship={valley.ship} />
+        {hasFeature(village, 'ship') ? (
+          <TradeShipCard ship={valley.ship} />
+        ) : (
+          <section className="card flex items-center gap-3 p-4 text-sm">
+            <span className="text-3xl opacity-70" aria-hidden>⛵</span>
+            <p className="font-semibold text-bark-600">
+              Am Hafen legt ab und zu ein Handelsschiff an. Beladen kannst du es ab Aufgabe{' '}
+              {featureUnlock(content, 'ship').index + 1} im Hofbuch („{featureUnlock(content, 'ship').quest?.title}“).
+            </p>
+          </section>
+        )}
 
         <section>
           <h3 className="mb-2 text-lg font-semibold">Gemeinschaftsprojekte</h3>

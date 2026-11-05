@@ -74,6 +74,11 @@ model Village {
   lastTickAt DateTime @default(now()) // bis hierhin ist die Simulation gerechnet
   createdAt  DateTime @default(now())
 
+  // Hofbuch: Index der aktuellen Aufgabe, Lebenszeit-Zähler und Zählerstand beim Aufgabenstart
+  questStep Int  @default(0)
+  stats     Json @default("{}") // { collected: { wood: 40 }, research: 1, contributed: 10, shipLoaded: 0 }
+  questBase Json @default("{}")
+
   ownerId String @unique
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 

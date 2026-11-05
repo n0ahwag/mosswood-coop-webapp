@@ -8,6 +8,7 @@ import type { Building, BuildingDef } from '../lib/types';
 import {
   Barrel, Cottage, Fence, House, Log, LogPile, Pot, Smoke,
 } from './House';
+import { useHtmlPortal } from './htmlPortal';
 import { facePlaza, mulberry32, PLOTS, TABLE_POS, type Vec2 } from './layout';
 import { C } from './palette';
 
@@ -570,6 +571,7 @@ export function BuildingPlot({
 }) {
   const plot = PLOTS[building.type];
   const [hover, setHover] = useState(false);
+  const portal = useHtmlPortal();
   if (!plot) return null;
   const working = building.status === 'working';
   const stockEntries = Object.entries(building.stock).filter(([, n]) => n > 0);
@@ -601,7 +603,7 @@ export function BuildingPlot({
       >
         <BuildingModel type={building.type} working={working} />
       </group>
-      <Html position={[0, plot.labelHeight, 0]} center distanceFactor={9} zIndexRange={[30, 0]}>
+      <Html portal={portal} position={[0, plot.labelHeight, 0]} center distanceFactor={9} zIndexRange={[30, 0]}>
         <div className={`scene-label ${selected ? 'is-selected' : ''}`} onClick={() => onClick(building.id)}>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="size-2 shrink-0 rounded-full" style={{ background: STATUS_DOT[building.status] }} />

@@ -35,11 +35,33 @@ export interface VillagerRules {
   maxVillagers: number;
 }
 
+export type FeatureKey = 'research' | 'valley' | 'ship' | 'valleyResearch';
+
+export interface QuestDef {
+  key: string;
+  icon: string;
+  title: string;
+  text: string;
+  goal: { type: 'assign' | 'collect' | 'research' | 'contribute' | 'shipLoad'; amount: number; resource?: string; building?: string };
+  reward: { buildings?: string[]; features?: FeatureKey[]; resources?: Inventory };
+}
+
 export interface GameContent {
   resources: Record<string, ResourceDef>;
   buildings: Record<string, BuildingDef>;
   techs: Record<string, TechDef>;
   villagerRules: VillagerRules;
+  quests: QuestDef[];
+  features: Record<FeatureKey, { name: string; icon: string }>;
+}
+
+export interface Progression {
+  step: number;
+  total: number;
+  quest: (QuestDef & { progress: number }) | null;
+  features: FeatureKey[];
+  unlockedBuildings: string[];
+  locked: { type: string; questIndex: number; questTitle: string }[];
 }
 
 export type VillagerState = 'IDLE' | 'WORKING' | 'HUNGRY' | 'EATING' | 'TIRED' | 'RESTING';
@@ -74,6 +96,7 @@ export interface VillageState {
   storageCap: number;
   villagerSlots: number;
   techKeys: string[];
+  progression: Progression;
   buildings: Building[];
   villagers: Villager[];
   serverTime: number;

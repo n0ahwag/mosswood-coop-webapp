@@ -194,6 +194,30 @@ stateDiagram-v2
 
 Ohne Essen im Lager bleibt ein hungriger Bewohner stehen. Die Küche ist deshalb das Herz jedes Hofs.
 
+### Das Hofbuch (Fortschritt)
+
+Neue Spieler starten nur mit der **Beerenfarm**, zwei Bewohnern und 12 Beeren. Eine Kette aus 12 Aufgaben bringt das Spiel Schritt für Schritt bei und schaltet dabei alles Weitere frei:
+
+| # | Aufgabe | Ziel | Schaltet frei |
+| --- | --- | --- | --- |
+| 1 | Ein neuer Anfang | Bewohner in die Beerenfarm | – |
+| 2 | Erste Ernte | 6 Beeren einsammeln | Holzfällerhütte |
+| 3 | Holz für den Hof | 10 Holz | Weizenfeld |
+| 4 | Goldene Ähren | 6 Weizen | Küche |
+| 5 | Warme Mahlzeit | 4 Mahlzeiten | Sägewerk, +4 Mahlzeiten |
+| 6 | Bretter sägen | 5 Planken | Steinbruch, **Forschung** |
+| 7 | Steine brechen | 10 Stein | Tonkuhle |
+| 8 | Kluge Köpfe | 1 Technik erforschen | Ziegelbrennerei |
+| 9 | Ziegel brennen | 5 Ziegel | **Gemeinschaftsprojekte**, +10 Planken |
+| 10 | Gemeinsam stark | 10 Waren ins Tal einzahlen | Flachsfeld, Weberei |
+| 11 | Feine Stoffe | 3 Stoff | **Handelsschiff** |
+| 12 | Ahoi! | 5 Waren aufs Schiff | **Tal-Forschung**, +10 Mahlzeiten |
+
+- Gesperrte Gebäude stehen im 3D-Dorf als Bauplätze mit Schild, gesperrte Bereiche zeigen ein Schloss.
+- Gezählt wird nur, was nach Beginn einer Aufgabe passiert (`Village.stats` und `Village.questBase`).
+- Der Server prüft die Sperren selbst; ein gesperrter Bereich lässt sich auch nicht über die API nutzen.
+- Aufgaben stehen in `QUESTS` in `server/src/game/content.js`. Ein Test stellt sicher, dass jede Aufgabe mit dem lösbar ist, was vorher freigeschaltet wurde.
+
 ### Produktion
 
 - Ein Gebäude arbeitet nur, wenn mindestens ein Bewohner im Zustand `WORKING` zugewiesen ist. Ein zweiter Arbeiter bringt +80 % Tempo.
