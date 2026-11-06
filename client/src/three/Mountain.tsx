@@ -20,17 +20,17 @@ const col = (hex: string) => new THREE.Color(hex);
 const TERRAIN_SIZE = 66;
 
 const PALETTE = {
-  grassA: col('#68ad38'),
-  grassB: col('#97cb48'),
-  grassDry: col('#bfc462'),
-  moss: col('#5a9a36'),
-  dirt: col('#b88856'),
-  path: col('#e4c890'),
-  pathDark: col('#caa771'),
-  rockA: col('#cba57a'),
-  rockB: col('#a98562'),
-  rockWarm: col('#d59b6a'),
-  low: col('#9aafc4'),
+  grassA: col('#7bbe38'),
+  grassB: col('#84c43e'),
+  grassDry: col('#93cc47'),
+  moss: col('#74b636'),
+  dirt: col('#8fb64e'),
+  path: col('#e6d6ae'),
+  pathDark: col('#dccb9e'),
+  rockA: col('#9fabb9'),
+  rockB: col('#8794a5'),
+  rockWarm: col('#adb8c4'),
+  low: col('#93b0cc'),
 };
 
 function buildTerrainGeometry(seg: number) {
@@ -64,20 +64,20 @@ function buildTerrainGeometry(seg: number) {
 
       // Wiese: Farbflecken, an Kanten trockener
       const patch = fbm2(x * 0.12, z * 0.12, 3);
-      c.copy(PALETTE.grassA).lerp(PALETTE.grassB, Math.min(1, patch * 1.3));
+      c.copy(PALETTE.grassA).lerp(PALETTE.grassB, Math.min(1, patch * 0.8));
       const rimDry = Math.max(0, 1 - flat[i]) * 0.5;
-      c.lerp(PALETTE.grassDry, rimDry * 0.6 + Math.max(0, fbm2(x * 0.5, z * 0.5, 2) - 0.6) * 0.8);
+      c.lerp(PALETTE.grassDry, rimDry * 0.7);
 
       // Fels mit Schichtbändern
       const strata = 0.5 + 0.5 * Math.sin(y * 2.3 + fbm2(x * 0.2, z * 0.2, 3) * 5);
-      tmp.copy(PALETTE.rockA).lerp(PALETTE.rockB, strata * 0.55).lerp(PALETTE.rockWarm, Math.max(0, fbm2(x * 0.08 + 5, z * 0.08, 2) - 0.45));
+      tmp.copy(PALETTE.rockA).lerp(PALETTE.rockB, strata * 0.35).lerp(PALETTE.rockWarm, Math.max(0, fbm2(x * 0.08 + 5, z * 0.08, 2) - 0.45) * 0.6);
       // Moos und Gras halten sich auch auf steileren Hängen, Fels nur an echten Wänden
       const mossy = (fbm2(x * 0.25 + 9, z * 0.25, 3) - 0.35) * 0.25;
       const grassy = THREE.MathUtils.smoothstep(ny + mossy, 0.5, 0.7) * (0.85 + flat[i] * 0.15);
       // Übergang: ein Streifen Erde und Moos
       const edge = 1 - Math.abs(grassy - 0.5) * 2;
       c.lerp(tmp, 1 - grassy);
-      c.lerp(PALETTE.dirt, edge * 0.25);
+      c.lerp(PALETTE.dirt, edge * 0.15);
       if (grassy > 0.3 && flat[i] < 0.5) c.lerp(PALETTE.moss, 0.25 * (1 - flat[i]));
 
       // Trampelpfade auf den Plateaus
@@ -85,7 +85,7 @@ function buildTerrainGeometry(seg: number) {
         const d = distToPath([x, z]);
         const p = (1 - THREE.MathUtils.smoothstep(d, 0.3, 0.62)) * flat[i];
         if (p > 0) {
-          tmp.copy(PALETTE.path).lerp(PALETTE.pathDark, fbm2(x * 2.5, z * 2.5, 2));
+          tmp.copy(PALETTE.path).lerp(PALETTE.pathDark, fbm2(x * 0.6, z * 0.6, 2));
           c.lerp(tmp, p * 0.92);
         }
       }
@@ -118,7 +118,7 @@ export function makeTerrainMaterial(cloudFade = true) {
     shader.uniforms.uGrassN = { value: grass.normal };
     shader.uniforms.uRock = { value: rock.map };
     shader.uniforms.uRockN = { value: rock.normal };
-    shader.uniforms.uCloud = { value: new THREE.Color('#edf1f6') };
+    shader.uniforms.uCloud = { value: new THREE.Color('#f2f8ff') };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
       .replace(
@@ -146,7 +146,8 @@ vec3 triW() { vec3 b = pow(abs(normalize(vWNrm)), vec3(6.0)); return b / (b.x + 
   vec3 ry = texture2D(uRock, vWPos.xz / 4.0).rgb;
   vec3 rz = texture2D(uRock, vWPos.xy / 4.0).rgb;
   vec3 rk = rx * bw.x + ry * bw.y + rz * bw.z;
-  diffuseColor.rgb *= mix(rk, g, grassy) * 1.15;
+  // Flacher Look: Gras- und Felstextur sind aus (Faktor 0), nur die Vertex-Farben zählen
+  diffuseColor.rgb *= mix(vec3(1.0), mix(rk, g, grassy), 0.0);
 }`,
       )
       .replace(
@@ -160,7 +161,7 @@ vec3 triW() { vec3 b = pow(abs(normalize(vWNrm)), vec3(6.0)); return b / (b.x + 
   vec3 tz = texture2D(uRockN, vWPos.xy / 4.0).xyz * 2.0 - 1.0;
   vec3 nW = normalize(vWNrm);
   vec3 pert = vec3(0.0, tx.y, tx.x) * bw.x + vec3(ty.x, 0.0, ty.y) * bw.y + vec3(tz.x, tz.y, 0.0) * bw.z;
-  nW = normalize(nW + pert * mix(0.45, 0.25, grassy));
+  nW = normalize(nW + pert * 0.0);
   normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
 }`,
       )
@@ -195,7 +196,7 @@ function Well() {
       <mesh geometry={cyl(0.84, 0.84, 0.1, 28)} material={m.stoneDark} position={[0, 0.69, 0]} castShadow />
       <mesh position={[0, 0.62, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.66, 28]} />
-        <meshStandardMaterial color="#3f8fa6" roughness={0.08} metalness={0.2} />
+        <meshStandardMaterial color="#3d8fe3" roughness={0.15} metalness={0.05} />
       </mesh>
       {[-0.68, 0.68].map((x) => (
         <mesh key={x} geometry={box(0.12, 1.3, 0.12, 0.03)} material={m.timber} position={[x, 1.25, 0]} castShadow />
@@ -429,7 +430,7 @@ export function Lake() {
   const m = mats();
   const mat = useMemo(
     () => new THREE.MeshStandardMaterial({
-      color: '#4fb0c6', roughness: 0.06, metalness: 0.15, normalMap: waterNormal(), normalScale: new THREE.Vector2(0.25, 0.25),
+      color: '#3d8fe3', roughness: 0.15, metalness: 0.05, normalMap: waterNormal(), normalScale: new THREE.Vector2(0.25, 0.25),
       transparent: true, opacity: 0.92,
     }),
     [],
@@ -450,7 +451,7 @@ export function Lake() {
       </mesh>
       {reeds.map((r, i) => (
         <mesh key={i} geometry={cyl(0.015, 0.025, r.h, 5)} position={[r.x, heightAt(r.x, r.z) + r.h / 2, r.z]}>
-          <meshStandardMaterial color={i % 2 ? '#7ea24a' : '#93b357'} roughness={0.9} />
+          <meshStandardMaterial color={i % 2 ? '#6aae3c' : '#80c046'} roughness={0.9} />
         </mesh>
       ))}
       {[0.4, 2.1, 3.6, 5.0].map((a, i) => {

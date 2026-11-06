@@ -20,6 +20,7 @@ import { C } from './palette';
 import { DistantMountains, Lights, SKY, SkyDome } from './Sky';
 import { tex } from './textures';
 import { MapCamera } from './MapCamera';
+import { setupRenderer } from './stylize';
 import { Meadow, TreeInstances, type MeadowSpot, type PlantItem } from './Vegetation';
 
 const RIVER: Vec2[] = [[-28, -13], [-21, -10], [-12, -6], [-4, -2.5], [3, 3], [6, 10], [6, 15.5]];
@@ -79,18 +80,17 @@ function valleyGeometry(size: number, seg: number, farms: number) {
   geo.computeVertexNormals();
   const n = geo.attributes.normal as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
-  const grassA = new THREE.Color('#84c24e');
-  const grassB = new THREE.Color('#b6e062');
-  const meadow = new THREE.Color('#d8e27a');
-  const rock = new THREE.Color('#dcc6a4');
-  const sand = new THREE.Color('#f3deac');
-  const path = new THREE.Color('#f4deae');
+  const grassA = new THREE.Color('#7bbe38');
+  const grassB = new THREE.Color('#84c43e');
+  const rock = new THREE.Color('#9fabb9');
+  const sand = new THREE.Color('#eedcae');
+  const path = new THREE.Color('#e6d6ae');
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
     const y = pos.getY(i);
-    c.copy(grassA).lerp(grassB, fbm2(x * 0.1, z * 0.1, 3) * 1.2).lerp(meadow, Math.max(0, fbm2(x * 0.3, z * 0.3, 2) - 0.6));
+    c.copy(grassA).lerp(grassB, fbm2(x * 0.1, z * 0.1, 3) * 0.8);
     c.lerp(rock, 1 - smoothstep(0.65, 0.85, n.getY(i)));
     const shore = Math.min(distToRiver([x, z]), Math.hypot(x - SPOTS.harbor[0], z - SPOTS.harbor[1]) - HARBOR_R + 1.2);
     c.lerp(sand, (1 - smoothstep(1.2, 2.2, shore)) * 0.8);
@@ -115,7 +115,7 @@ function Water() {
     const n = tex('leafy').normal.clone();
     n.repeat.set(0.5, 0.5);
     n.needsUpdate = true;
-    return new THREE.MeshStandardMaterial({ color: '#4fb0c6', roughness: 0.05, metalness: 0.2, normalMap: n, normalScale: new THREE.Vector2(0.3, 0.3) });
+    return new THREE.MeshStandardMaterial({ color: '#3d8fe3', roughness: 0.15, metalness: 0.05, normalMap: n, normalScale: new THREE.Vector2(0.3, 0.3) });
   }, []);
   useFrame(() => {
     mat.normalMap?.offset.set(worldTime.value * 0.03, worldTime.value * 0.02);
@@ -269,7 +269,7 @@ function MossBridge({ p }: { p: number }) {
           {/* Moospolster */}
           {[-1.2, 0.4, 1.5].map((x, i) => (
             <mesh key={x} geometry={sphere(0.25, 16, 10)} position={[x, 0.78 + Math.sin(((x + 2) / 4) * Math.PI) * 0.9, (i - 1) * 0.5]} scale={[1.4, 0.4, 1]}>
-              <meshStandardMaterial color="#6f9f3f" roughness={1} />
+              <meshStandardMaterial color="#6fb63e" roughness={0.9} />
             </mesh>
           ))}
         </>
@@ -540,7 +540,7 @@ function Plaza() {
       <mesh geometry={cyl(2.8, 2.9, 0.12, 48)} material={m.cobble} position={[0, 0.02, 0]} receiveShadow />
       <mesh geometry={cyl(0.7, 0.8, 0.5, 28)} material={m.stone} position={[0, 0.3, 0]} castShadow />
       <mesh geometry={sphere(0.5, 24, 16, Math.PI / 2)} position={[0, 0.55, 0]}>
-        <meshStandardMaterial color="#77a94a" roughness={0.9} />
+        <meshStandardMaterial color="#76bc42" roughness={0.9} />
       </mesh>
       <Lantern position={[2.1, 0, 1.1]} />
       <Lantern position={[-2.1, 0, -1.1]} />
@@ -605,8 +605,7 @@ export default function ValleyScene({
           camera={{ position: [22, 26, 31], fov: 34, near: 0.5, far: 1200 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
-            gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.0;
+            setupRenderer(gl);
           }}
           onPointerMissed={() => select(null)}
         >

@@ -20,15 +20,15 @@ export function ProgressBar({
   }, [pct]);
 
   const colors = {
-    moss: 'bg-moss-400',
-    honey: 'bg-honey-400',
-    clay: 'bg-clay-400',
-    creek: 'bg-creek-400',
+    moss: 'bg-[#6cbf3c]',
+    honey: 'bg-[#f5b52e]',
+    clay: 'bg-[#e0634c]',
+    creek: 'bg-[#4697e2]',
   } as const;
 
   return (
     <div
-      className="h-3 w-full overflow-hidden rounded-full border-2 border-wood-600/40 bg-[#e6d3a8] shadow-[inset_0_2px_3px_rgba(79,48,25,0.3)]"
+      className="h-3.5 w-full overflow-hidden rounded-full bg-[#3a2f26]/80 shadow-[inset_0_2px_2px_rgba(0,0,0,0.35)]"
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={max}
@@ -36,7 +36,7 @@ export function ProgressBar({
       aria-label={label}
     >
       <div
-        className={`h-full rounded-full shadow-[inset_0_2px_0_rgba(255,255,255,0.45)] ${colors[tone]} ${animate ? 'transition-[width] duration-[2000ms] ease-linear' : ''}`}
+        className={`h-full rounded-full shadow-[inset_0_2px_0_rgba(255,255,255,0.35)] ${colors[tone]} ${animate ? 'transition-[width] duration-[2000ms] ease-linear' : ''}`}
         style={{ width: `${pct}%` }}
       />
     </div>

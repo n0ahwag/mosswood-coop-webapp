@@ -106,10 +106,16 @@ interface PaintOptions {
 }
 
 // Mittlere Helligkeit der hellen Muster-Texturen (sRGB). Das Material färbt sie ein.
-const TARGET_MEAN = 0.84;
+const TARGET_MEAN = 0.92;
+
+// Flächiger Low-Poly-Look: keine Muster und kein Relief, nur reine Farbflächen.
+// (Die Generatoren bleiben, falls später wieder etwas Struktur gewünscht ist.)
+const DETAIL = 0;
+const RELIEF = 0;
 
 function paint(size: number, shader: Shader, normalStrength: number, tile: number, opts: PaintOptions = {}): TexturePair {
-  const { normalize = true, contrast = 0.85 } = opts;
+  const { normalize = true, contrast: rawContrast = 0.55 } = opts;
+  const contrast = rawContrast * DETAIL;
   const color = document.createElement('canvas');
   color.width = color.height = size;
   const cctx = color.getContext('2d')!;
@@ -151,7 +157,7 @@ function paint(size: number, shader: Shader, normalStrength: number, tile: numbe
   normal.width = normal.height = size;
   const nctx = normal.getContext('2d')!;
   const nimg = nctx.createImageData(size, size);
-  const s = normalStrength * size / 256;
+  const s = normalStrength * RELIEF * size / 256;
   for (let y = 0; y < size; y++) {
     const yu = wrap(y - 1, size);
     const yd = wrap(y + 1, size);

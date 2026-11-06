@@ -8,12 +8,12 @@ import { QUALITY, worldTime } from './clock';
 import { fbm2, mulberry32 } from './layout';
 
 export const SKY = {
-  zenith: '#58ade8',
-  horizon: '#f5e8cf',
-  fog: '#e6ebe4',
+  zenith: '#4c9fe6',
+  horizon: '#d6ecfa',
+  fog: '#dcebf5',
   sun: new THREE.Vector3(0.55, 0.62, 0.35).normalize(),
   cloudTop: '#ffffff',
-  cloudShade: '#c9d3ec',
+  cloudShade: '#c4d6ee',
 };
 
 // ---------- Himmelskuppel ----------
@@ -161,7 +161,7 @@ export function CloudBanks({ center = [0, 0], innerRadius = 20, outerRadius = 42
     <group ref={group}>
       <instancedMesh ref={ref} args={[undefined, undefined, puffs.length]} frustumCulled={false}>
         <icosahedronGeometry args={[1, 3]} />
-        <meshStandardMaterial color="#ffffff" emissive="#dfe7f5" emissiveIntensity={0.35} roughness={1} />
+        <meshStandardMaterial color="#ffffff" emissive="#e4f0ff" emissiveIntensity={0.5} roughness={1} />
       </instancedMesh>
     </group>
   );
@@ -173,9 +173,9 @@ function mountainGeometry(seed: number, height: number, radius: number) {
   const g = new THREE.ConeGeometry(radius, height, 48, 18, true);
   const pos = g.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
-  const snow = new THREE.Color('#f4f7fb');
-  const rock = new THREE.Color('#8794a6');
-  const forest = new THREE.Color('#6f8d74');
+  const snow = new THREE.Color('#ffffff');
+  const rock = new THREE.Color('#9aaccc');
+  const forest = new THREE.Color('#7fa98e');
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
@@ -228,17 +228,17 @@ export function Lights({ shadowSize = 36, target = [0, 3, 0] as [number, number,
     l.target.position.set(...target);
     l.target.updateMatrixWorld();
     // weichere, hellere Schatten wirken freundlicher
-    (l.shadow as THREE.LightShadow & { intensity?: number }).intensity = 0.8;
+    (l.shadow as THREE.LightShadow & { intensity?: number }).intensity = 0.68;
   }, [target]);
   const sunPos = SKY.sun.clone().multiplyScalar(60).add(new THREE.Vector3(...target));
   return (
     <>
-      <hemisphereLight args={['#fff5df', '#93b86a', 0.85]} />
+      <hemisphereLight args={['#e4efff', '#7fa860', 0.85]} />
       <directionalLight
         ref={sun}
         position={sunPos}
-        intensity={2.4}
-        color="#fff0d4"
+        intensity={2.8}
+        color="#fff1cf"
         castShadow
         shadow-mapSize={[mapSize, mapSize]}
         shadow-camera-left={-shadowSize}
@@ -251,7 +251,7 @@ export function Lights({ shadowSize = 36, target = [0, 3, 0] as [number, number,
         shadow-normalBias={0.035}
       />
       {/* Weiches Umgebungslicht für Glanz und Tiefe, ohne externe Bilddateien */}
-      <Environment resolution={128} frames={1} environmentIntensity={0.6}>
+      <Environment resolution={128} frames={1} environmentIntensity={0.35}>
         <color attach="background" args={['#cfe3ee']} />
         <Lightformer form="rect" intensity={2.2} color="#fff4de" position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[40, 40, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#bcd9ff" position={[-14, 4, -10]} scale={[20, 8, 1]} target={[0, 0, 0]} />

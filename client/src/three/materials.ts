@@ -7,13 +7,17 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import './stylize';
 import { tex, type TextureKind } from './textures';
 
 type MatOptions = Omit<THREE.MeshStandardMaterialParameters, 'normalScale'> & { texture?: TextureKind; relief?: number };
 
+/** Flächiger Low-Poly-Look: reine Farben, sichtbare Facetten, keine Muster. */
+const FLAT = true;
+
 function std({ texture, relief = 1, ...params }: MatOptions) {
-  const m = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0, ...params });
-  if (texture) {
+  const m = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0, flatShading: FLAT, ...params });
+  if (texture && !FLAT) {
     const t = tex(texture);
     m.map = t.map;
     m.normalMap = t.normal;
@@ -23,45 +27,46 @@ function std({ texture, relief = 1, ...params }: MatOptions) {
 }
 
 function build() {
+  // Klare, matte Flächenfarben mit ruhiger Sättigung (Texturen sind im flachen Look aus).
   return {
-    plaster: std({ texture: 'plaster', color: '#f8efdc', roughness: 0.92, relief: 0.4 }),
-    plasterWarm: std({ texture: 'plaster', color: '#f6e2bb', roughness: 0.92, relief: 0.4 }),
-    plasterRose: std({ texture: 'plaster', color: '#f5cfbd', roughness: 0.92, relief: 0.4 }),
-    timber: std({ texture: 'grain', color: '#7e4f2c', roughness: 0.82, relief: 0.5 }),
-    wood: std({ texture: 'planks', color: '#c4854b', roughness: 0.82, relief: 0.65 }),
-    woodLight: std({ texture: 'planks', color: '#e0ab70', roughness: 0.82, relief: 0.65 }),
-    woodDark: std({ texture: 'planks', color: '#945c35', roughness: 0.82, relief: 0.65 }),
-    woodGreen: std({ texture: 'planks', color: '#5ea86f', roughness: 0.78, relief: 0.6 }),
-    woodBlue: std({ texture: 'planks', color: '#5d9ccc', roughness: 0.78, relief: 0.6 }),
-    woodRed: std({ texture: 'planks', color: '#d65e42', roughness: 0.78, relief: 0.6 }),
-    beam: std({ texture: 'grain', color: '#cf9a5e', roughness: 0.82, relief: 0.5 }),
-    log: std({ texture: 'bark', color: '#8d603c', roughness: 0.92, relief: 1 }),
-    logEnd: std({ texture: 'grain', color: '#eac288', roughness: 0.88, relief: 0.25 }),
-    stone: std({ texture: 'stoneWall', color: '#d9ccb6', roughness: 0.92, relief: 0.9 }),
-    stoneDark: std({ texture: 'stoneWall', color: '#b3a691', roughness: 0.92, relief: 0.9 }),
-    rock: std({ texture: 'rockDetail', color: '#c8b79b', roughness: 0.92, relief: 1 }),
-    cobble: std({ texture: 'cobble', color: '#dcc79d', roughness: 0.92, relief: 0.85 }),
-    roofRed: std({ texture: 'shingles', color: '#e06a3c', roughness: 0.7, relief: 0.95 }),
-    roofDark: std({ texture: 'shingles', color: '#c25536', roughness: 0.7, relief: 0.95 }),
-    roofSlate: std({ texture: 'shingles', color: '#5788b8', roughness: 0.6, relief: 0.95 }),
-    roofMoss: std({ texture: 'shingles', color: '#7fae52', roughness: 0.75, relief: 0.95 }),
-    thatch: std({ texture: 'thatch', color: '#e9bf62', roughness: 0.97, relief: 1.1 }),
-    brick: std({ texture: 'bricks', color: '#ffffff', roughness: 0.9, relief: 1 }),
-    clay: std({ texture: 'plaster', color: '#cc7f50', roughness: 0.88, relief: 0.6 }),
-    clayWet: std({ texture: 'plaster', color: '#a25d38', roughness: 0.32, relief: 0.5 }),
-    soil: std({ texture: 'soil', color: '#b17a4c', roughness: 0.97, relief: 1 }),
-    soilDark: std({ texture: 'soil', color: '#91623f', roughness: 0.97, relief: 1 }),
-    cloth: std({ texture: 'cloth', color: '#f3ead6', roughness: 0.95, relief: 0.4, side: THREE.DoubleSide }),
-    leaf: std({ texture: 'leafy', color: '#ffffff', roughness: 0.8, relief: 0.7 }),
-    metal: std({ color: '#9aa3a9', roughness: 0.35, metalness: 0.75 }),
-    iron: std({ color: '#57504b', roughness: 0.48, metalness: 0.55 }),
-    gold: std({ color: '#e8b84a', roughness: 0.28, metalness: 0.85 }),
-    copper: std({ color: '#56b5a5', roughness: 0.42, metalness: 0.4 }),
-    rope: std({ color: '#d9c597', roughness: 1 }),
-    window: std({ color: '#ffd98a', emissive: '#ffbf5a', emissiveIntensity: 0.9, roughness: 0.25 }),
-    windowDim: std({ color: '#c9d9e0', emissive: '#ffbf5a', emissiveIntensity: 0.12, roughness: 0.15, metalness: 0.1 }),
-    lamp: std({ color: '#fff1c4', emissive: '#ffc766', emissiveIntensity: 1.6, roughness: 0.4 }),
-    white: std({ color: '#f8f4ec', roughness: 0.8 }),
+    plaster: std({ texture: 'plaster', color: '#f7ecd8', roughness: 0.9 }),
+    plasterWarm: std({ texture: 'plaster', color: '#f2dcb2', roughness: 0.9 }),
+    plasterRose: std({ texture: 'plaster', color: '#f0cbb6', roughness: 0.9 }),
+    timber: std({ texture: 'grain', color: '#7d4f2e', roughness: 0.85 }),
+    wood: std({ texture: 'planks', color: '#c98b55', roughness: 0.85 }),
+    woodLight: std({ texture: 'planks', color: '#e0ad76', roughness: 0.85 }),
+    woodDark: std({ texture: 'planks', color: '#9b663e', roughness: 0.85 }),
+    woodGreen: std({ texture: 'planks', color: '#62ad4c', roughness: 0.8 }),
+    woodBlue: std({ texture: 'planks', color: '#4f8bd6', roughness: 0.8 }),
+    woodRed: std({ texture: 'planks', color: '#d65c43', roughness: 0.8 }),
+    beam: std({ texture: 'grain', color: '#cf9a63', roughness: 0.85 }),
+    log: std({ texture: 'bark', color: '#8e5f3c', roughness: 0.9 }),
+    logEnd: std({ texture: 'grain', color: '#ecc790', roughness: 0.9 }),
+    stone: std({ texture: 'stoneWall', color: '#d2cec6', roughness: 0.9 }),
+    stoneDark: std({ texture: 'stoneWall', color: '#aca8a0', roughness: 0.9 }),
+    rock: std({ texture: 'rockDetail', color: '#a9b0b9', roughness: 0.9 }),
+    cobble: std({ texture: 'cobble', color: '#e0d6c2', roughness: 0.9 }),
+    roofRed: std({ texture: 'shingles', color: '#d95b3e', roughness: 0.75 }),
+    roofDark: std({ texture: 'shingles', color: '#bf4b34', roughness: 0.75 }),
+    roofSlate: std({ texture: 'shingles', color: '#4580d6', roughness: 0.7 }),
+    roofMoss: std({ texture: 'shingles', color: '#6cb24a', roughness: 0.75 }),
+    thatch: std({ texture: 'thatch', color: '#efc251', roughness: 0.9 }),
+    brick: std({ texture: 'bricks', color: '#c8664a', roughness: 0.9 }),
+    clay: std({ texture: 'plaster', color: '#d27f52', roughness: 0.85 }),
+    clayWet: std({ texture: 'plaster', color: '#a8603f', roughness: 0.35 }),
+    soil: std({ texture: 'soil', color: '#a87550', roughness: 0.95 }),
+    soilDark: std({ texture: 'soil', color: '#8b5e40', roughness: 0.95 }),
+    cloth: std({ texture: 'cloth', color: '#f8f0e0', roughness: 0.9, side: THREE.DoubleSide }),
+    leaf: std({ texture: 'leafy', color: '#7cbf45', roughness: 0.95 }),
+    metal: std({ color: '#aeb8bf', roughness: 0.4, metalness: 0.6 }),
+    iron: std({ color: '#5e5955', roughness: 0.5, metalness: 0.45 }),
+    gold: std({ color: '#f0c046', roughness: 0.3, metalness: 0.75 }),
+    copper: std({ color: '#5bbfac', roughness: 0.45, metalness: 0.3 }),
+    rope: std({ color: '#e2cc98', roughness: 0.95 }),
+    window: std({ color: '#ffe29a', emissive: '#ffc45a', emissiveIntensity: 0.8, roughness: 0.3 }),
+    windowDim: std({ color: '#cfe2ee', emissive: '#ffc45a', emissiveIntensity: 0.1, roughness: 0.2, metalness: 0.05 }),
+    lamp: std({ color: '#fff3c8', emissive: '#ffc85a', emissiveIntensity: 1.5, roughness: 0.4 }),
+    white: std({ color: '#fbf8f2', roughness: 0.85 }),
   };
 }
 

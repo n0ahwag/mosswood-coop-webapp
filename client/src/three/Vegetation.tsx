@@ -91,13 +91,13 @@ function pineGeometry() {
     { r: 0.38, h: 0.85, y: 2.75 },
   ];
   const parts = layers.map((l, i) => {
-    const g = welded(new THREE.ConeGeometry(l.r, l.h, 20, 4));
+    const g = welded(new THREE.ConeGeometry(l.r, l.h, 9, 2));
     g.translate(0, l.y, 0);
     displace(g, 0.18, 2.2, i * 3.1);
     return planarUv(g, 1.1);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#357a3b', '#86bf55', 0.4, 3.2);
+  return paintGradient(merged, '#2f7f3c', '#6fb94a', 0.4, 3.2);
 }
 
 /** Laubbaum-Krone: mehrere verschmolzene, buckelige Kugeln. Mittelpunkt bei y = 0. */
@@ -110,21 +110,21 @@ function crownGeometry() {
     { p: [-0.1, 0.15, 0.6], r: 0.6 },
   ];
   const parts = blobs.map((b, i) => {
-    const g = welded(new THREE.IcosahedronGeometry(b.r, 3));
+    const g = welded(new THREE.IcosahedronGeometry(b.r, 1));
     g.translate(b.p[0], b.p[1], b.p[2]);
     displace(g, 0.22, 2.6, i * 5.3);
     return planarUv(g, 1.2);
   });
   const merged = mergeGeometries(parts)!;
-  return paintGradient(merged, '#4c8f31', '#afdc66', -0.8, 1.2);
+  return paintGradient(merged, '#3d9533', '#8fcd4c', -0.8, 1.2);
 }
 
 /** Grasbüschel aus sieben gebogenen Halmen. Fuß bei y = 0, Höhe 1. */
 function tuftGeometry() {
   const positions: number[] = [];
   const colors: number[] = [];
-  const base = new THREE.Color('#5a9632');
-  const tip = new THREE.Color('#c4e37a');
+  const base = new THREE.Color('#6cb23e');
+  const tip = new THREE.Color('#a2d460');
   const rng = mulberry32(77);
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2 + rng();
@@ -215,8 +215,8 @@ function scatterTrees() {
   const pines: Item[] = [];
   const leafy: Item[] = [];
   const forest = PEAKS.forest;
-  const pineTint = ['#ffffff', '#e6f0d8', '#d4e6c2', '#f2f6e4'];
-  const leafTint = ['#ffffff', '#f4ffe0', '#e8f5cf', '#fff3d6', '#dff0c4'];
+  const pineTint = ['#ffffff', '#f2f8ee', '#eaf3e4', '#f8fbf4'];
+  const leafTint = ['#ffffff', '#f6fbea', '#eef6e0', '#fbf8e8', '#eaf4dc'];
 
   const attempt = (x: number, z: number, dense: boolean) => {
     const g = groundAt(x, z);
@@ -284,7 +284,7 @@ export function TreeInstances({ pines, leafy }: { pines: Item[]; leafy: Item[] }
   const crownGeo = useMemo(crownGeometry, []);
   const leafMat = useMemo(() => {
     const t = tex('leafy');
-    return withWind(new THREE.MeshStandardMaterial({ vertexColors: true, map: t.map, normalMap: t.normal, roughness: 0.85 }), 0.006, 'leaf');
+    return withWind(new THREE.MeshStandardMaterial({ vertexColors: true, map: t.map, flatShading: true, roughness: 0.95 }), 0.006, 'leaf');
   }, []);
   const m = mats();
 
@@ -337,12 +337,12 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
 }) {
   const items = useMemo(() => {
     const rng = mulberry32(seed);
-    const target = QUALITY === 'high' ? 9000 : 3800;
+    const target = QUALITY === 'high' ? 700 : 350;
     const grass: Item[] = [];
     const flowers: Item[] = [];
     const bushes: Item[] = [];
-    const grassTint = ['#ffffff', '#e9f2c9', '#d8e9b0', '#f4f0c8', '#cfe3a8'];
-    const flowerTint = ['#f6a6b8', '#fbe27a', '#ffffff', '#c7a4f0', '#f48b6a', '#9ecbf2'];
+    const grassTint = ['#ffffff', '#f4f9ea', '#eef6e0'];
+    const flowerTint = ['#f2f0ea', '#f5d250', '#ee8aa4'];
     for (let i = 0; i < target * 4 && grass.length < target; i++) {
       const x = (rng() * 2 - 1) * extent;
       const z = (rng() * 2 - 1) * extent;
@@ -356,7 +356,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
         x, y: g.h - 0.02, z, s: 0.22 + rng() * 0.22, rot: rng() * Math.PI * 2,
         color: new THREE.Color(grassTint[Math.floor(rng() * grassTint.length)]),
       });
-      if (rng() < 0.13) {
+      if (rng() < 0.05) {
         flowers.push({
           x: x + 0.15, y: g.h + 0.12, z: z - 0.1, s: 0.6 + rng() * 0.5, rot: 0,
           color: new THREE.Color(flowerTint[Math.floor(rng() * flowerTint.length)]),
@@ -377,7 +377,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
   const crownGeo = useMemo(crownGeometry, []);
   const leafMat = useMemo(() => {
     const t = tex('leafy');
-    return new THREE.MeshStandardMaterial({ vertexColors: true, map: t.map, normalMap: t.normal, roughness: 0.85 });
+    return new THREE.MeshStandardMaterial({ vertexColors: true, map: t.map, flatShading: true, roughness: 0.95 });
   }, []);
 
   const grassRef = useRef<THREE.InstancedMesh>(null);
@@ -392,7 +392,7 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
       <instancedMesh ref={grassRef} args={[tuft, grassMat, items.grass.length]} receiveShadow />
       <instancedMesh ref={flowerRef} args={[undefined, undefined, items.flowers.length]}>
         <icosahedronGeometry args={[0.07, 1]} />
-        <meshStandardMaterial roughness={0.6} emissive="#ffffff" emissiveIntensity={0.08} />
+        <meshStandardMaterial roughness={0.8} />
       </instancedMesh>
       <instancedMesh ref={bushRef} args={[crownGeo, leafMat, items.bushes.length]} castShadow receiveShadow />
     </group>

@@ -343,7 +343,7 @@ export function Villager3D({
           </group>
 
           {/* Kopf */}
-          <group ref={head} position={[0, 1.33, 0]}>
+          <group ref={head} position={[0, 1.38, 0]} scale={1.16}>
             <mesh castShadow>
               <sphereGeometry args={[0.31, 18, 14]} />
               <meshStandardMaterial color={look.skin} roughness={0.75} />

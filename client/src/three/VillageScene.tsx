@@ -3,7 +3,6 @@
 
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import * as THREE from 'three';
 import type { GameContent, VillageState } from '../lib/types';
 import { BuildingPlot, DiningTable, Homes } from './Buildings';
 import { QUALITY, WorldClock } from './clock';
@@ -28,6 +27,7 @@ import { Crossings, Lake, Plaza, Terrain, Waterfalls } from './Mountain';
 import { CloudBanks, CloudSea, DistantMountains, Lights, SKY, SkyDome } from './Sky';
 import { Boulders, Meadow, Trees } from './Vegetation';
 import { MapCamera } from './MapCamera';
+import { setupRenderer } from './stylize';
 import { Villager3D, type VillagerPlan } from './Villager3D';
 
 export interface VillageSceneProps {
@@ -149,9 +149,8 @@ export default function VillageScene({
           camera={{ position: [30, 34, 40], fov: 34, near: 0.5, far: 1200 }}
           gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ gl }) => {
-            gl.toneMapping = THREE.NeutralToneMapping;
-            gl.toneMappingExposure = 1.0;
-            if (import.meta.env.DEV) (window as unknown as { __mwGl?: THREE.WebGLRenderer }).__mwGl = gl;
+            setupRenderer(gl);
+            if (import.meta.env.DEV) Object.assign(window, { __mwGl: gl });
           }}
           onPointerMissed={tap.background}
         >
