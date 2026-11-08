@@ -12,7 +12,7 @@ import type { BuildingDef, BuildPlan, Inventory } from '../lib/types';
 import { BuildingModel, Ring } from './Buildings';
 import { useHtmlPortal } from './htmlPortal';
 import { ResearchTower, TrainStation } from './Landmarks';
-import { facePlaza, hashString, mulberry32, PLOTS } from './layout';
+import { buildingRot, hashString, mulberry32, PLOTS } from './layout';
 import { box, cyl, mats, sphere } from './materials';
 import { GroundShadow } from './Mountain';
 import { C } from './palette';
@@ -191,7 +191,7 @@ export function ConstructionSite({
   const locked = !plan.available;
 
   return (
-    <group position={[plot.pos[0], plot.y, plot.pos[1]]} rotation={[0, facePlaza(plot.pos), 0]}>
+    <group position={[plot.pos[0], plot.y, plot.pos[1]]} rotation={[0, buildingRot(plot.pos), 0]}>
       <mesh position={[0, 0.05, 0]} onClick={click} visible={false}>
         <cylinderGeometry args={[plot.radius, plot.radius, 0.1, 24]} />
       </mesh>

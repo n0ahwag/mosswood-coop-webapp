@@ -81,8 +81,9 @@ export function VillageFestive() {
   const y = VILLAGE.y;
   const [cx, cz] = VILLAGE.pos;
   const poleAt = (a: number): Vec3 => [cx + Math.cos(a) * (PLAZA_RADIUS + 0.45), y, cz + Math.sin(a) * (PLAZA_RADIUS + 0.45)];
-  const poleA = poleAt(0.9);
-  const poleB = poleAt(0.9 + Math.PI);
+  // links und rechts am Platz (aus Kamerasicht), damit die Masten weder Brunnen noch Hütten verdecken
+  const poleA = poleAt(Math.PI);
+  const poleB = poleAt(0);
   const top = (p: Vec3): Vec3 => [p[0], p[1] + 3.45, p[2]];
   const home = (i: number): Vec3 => {
     const h = HOME_SLOTS[i];

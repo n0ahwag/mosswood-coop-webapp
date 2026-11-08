@@ -5,7 +5,7 @@ import { useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { QUALITY, worldTime } from './clock';
-import { isFree } from './decor';
+import { blocksView, isFree } from './decor';
 import { fbm2, groundAt, heightAt, mulberry32, PEAKS, type Vec2 } from './layout';
 import { cyl, mats } from './materials';
 import { tex } from './textures';
@@ -227,9 +227,11 @@ function scatterTrees() {
     if (!isFree(p, 0.5)) return;
     const gap = dense ? 1.15 : 1.6 + (1 - up) * 1.5;
     if (!grid.fits(p, gap)) return;
-    grid.add(p);
     const pine = dense ? rng() < 0.7 : g.flat < 0.4 ? rng() < 0.55 : rng() < 0.2;
     const s = (pine ? 0.62 + rng() * 0.55 : 0.75 + rng() * 0.5) * (g.flat < 0.3 ? 0.9 : 1);
+    // aus Kamerasicht nichts verdecken (Tanne ~3,5 hoch, Laubbaum ~3,3 hoch und breiter)
+    if (blocksView(p, g.h, (pine ? 3.5 : 3.3) * s, (pine ? 1.2 : 1.45) * s)) return;
+    grid.add(p);
     const item: Item = {
       x, y: g.h - 0.05, z, s, rot: rng() * Math.PI * 2,
       color: new THREE.Color((pine ? pineTint : leafTint)[Math.floor(rng() * 4)]),
@@ -238,13 +240,13 @@ function scatterTrees() {
   };
 
   // dichter Wald auf dem Waldgipfel und seinen Hängen
-  for (let i = 0; i < 900; i++) {
+  for (let i = 0; i < 1800; i++) {
     const a = rng() * Math.PI * 2;
     const r = Math.sqrt(rng()) * (forest.r + 7);
     attempt(forest.pos[0] + Math.cos(a) * r, forest.pos[1] + Math.sin(a) * r, true);
   }
   // locker verteilt über das ganze Massiv
-  for (let i = 0; i < 5200; i++) {
+  for (let i = 0; i < 9000; i++) {
     attempt((rng() * 2 - 1) * EXTENT, (rng() * 2 - 1) * EXTENT, false);
   }
   return { pines, leafy };
@@ -363,7 +365,11 @@ export function Meadow({ spot = mountainSpot, extent = EXTENT, seed = 8 }: {
         });
       }
       if (rng() < 0.012) {
-        bushes.push({ x, y: g.h + 0.15, z, s: 0.35 + rng() * 0.25, rot: rng() * 6, color: new THREE.Color('#ffffff') });
+        const bs = 0.35 + rng() * 0.25;
+        // Büsche auf dem Berg dürfen aus Kamerasicht nichts verdecken (im Tal gibt es eigene Regeln)
+        if (spot !== mountainSpot || !blocksView([x, z], g.h, 0.15 + bs * 1.3, bs * 1.5)) {
+          bushes.push({ x, y: g.h + 0.15, z, s: bs, rot: rng() * 6, color: new THREE.Color('#ffffff') });
+        }
       }
     }
     return { grass, flowers, bushes };
@@ -415,8 +421,9 @@ export function Boulders() {
       if (up > 0.95 && g.flat > 0.8 && rng() > 0.15) continue;
       if (!isFree([x, z], 0.3)) continue;
       if (!grid.fits([x, z], 1.2)) continue;
-      grid.add([x, z]);
       const s = 0.2 + rng() * (g.flat > 0.5 ? 0.35 : 0.7);
+      if (blocksView([x, z], g.h, s * 1.05, s * 1.3)) continue;
+      grid.add([x, z]);
       out.push({ x, y: g.h + s * 0.15, z, s, rot: rng() * 6, color: new THREE.Color(tints[Math.floor(rng() * tints.length)]) });
     }
     return out;

@@ -10,7 +10,7 @@ import {
 } from './House';
 import { useHtmlPortal } from './htmlPortal';
 import {
-  facePlaza, mulberry32, PLOTS, TABLE_POS, TABLE_ROT, VILLAGE, type Vec2,
+  buildingRot, homeRot, mulberry32, PLOTS, TABLE_POS, TABLE_ROT, VILLAGE, type Vec2,
 } from './layout';
 import { box, cyl, mats, sphere } from './materials';
 import { GroundShadow } from './Mountain';
@@ -494,7 +494,7 @@ export function Homes({ slots, occupiedResting }: { slots: Vec2[]; occupiedResti
   return (
     <>
       {slots.map((p, i) => (
-        <group key={i} position={[p[0], VILLAGE.y, p[1]]} rotation={[0, facePlaza(p), 0]}>
+        <group key={i} position={[p[0], VILLAGE.y, p[1]]} rotation={[0, homeRot(p), 0]}>
           <GroundShadow radius={1.5} opacity={0.28} />
           <Cottage occupied resting={occupiedResting[i] ?? false} variant={i} />
           <mesh geometry={box(0.7, 0.08, 0.26, 0.02)} material={m.wood} position={[0.92, 0.2, 0.9]} castShadow />
@@ -585,7 +585,7 @@ export function BuildingPlot({
   };
 
   return (
-    <group position={[plot.pos[0], plot.y, plot.pos[1]]} rotation={[0, facePlaza(plot.pos), 0]}>
+    <group position={[plot.pos[0], plot.y, plot.pos[1]]} rotation={[0, buildingRot(plot.pos), 0]}>
       {/* unsichtbare, flache Klickfläche (Bewohner davor bleiben anklickbar) */}
       <mesh position={[0, 0.05, 0]} onClick={click} visible={false}>
         <cylinderGeometry args={[plot.radius, plot.radius, 0.1, 24]} />

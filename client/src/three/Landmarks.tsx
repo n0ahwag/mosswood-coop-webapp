@@ -9,7 +9,7 @@ import { clothMat, GrowIn } from './Buildings';
 import { wasDrag } from './dragGuard';
 import { House, Smoke } from './House';
 import { useHtmlPortal } from './htmlPortal';
-import { facePlaza, heightAt, PLOTS, type LandmarkKey, type Vec3 } from './layout';
+import { buildingRot, heightAt, PLOTS, type LandmarkKey, type Vec3 } from './layout';
 import { box, cyl, mats, sphere } from './materials';
 import { GroundShadow } from './Mountain';
 import { C } from './palette';
@@ -323,7 +323,7 @@ export function Landmark({
   const portal = useHtmlPortal();
   const [departing, setDeparting] = useState(0);
   const text = LANDMARK_TEXT[kind];
-  const rot = facePlaza(plot.pos);
+  const rot = buildingRot(plot.pos);
   const toWorld = useMemo(() => {
     const c = Math.cos(rot);
     const s = Math.sin(rot);
@@ -373,7 +373,7 @@ export function Landmark({
 /** Gleis ohne Bahnhof: zeigt schon vor dem Bau, wo die Bergbahn einmal fährt. */
 export function RailwayOnly() {
   const plot = PLOTS.trainStation;
-  const rot = facePlaza(plot.pos);
+  const rot = buildingRot(plot.pos);
   const toWorld = useMemo(() => {
     const c = Math.cos(rot);
     const s = Math.sin(rot);

@@ -29,12 +29,13 @@ export interface Peak {
 const peak = (key: string, name: string, at: Vec2, y: number, r: number): Peak => ({ key, name, pos: at, y, r });
 
 export const PEAKS: Record<string, Peak> = {
-  village: peak('village', 'Dorfgipfel', S(0, 0), 6.0, 6.5),
+  village: peak('village', 'Dorfgipfel', S(0, 0), 6.0, 7.4),
   forest: peak('forest', 'Waldgipfel', S(-12.8, 5.3), 7.2, 5.2),
   research: peak('research', 'Sternwarte', S(-3.5, 14), 11.0, 2.6),
   quarry: peak('quarry', 'Felsgipfel', S(9.5, 9.5), 9.0, 3.4),
   clay: peak('clay', 'Seeterrasse', S(13.8, -2.1), 4.5, 5.2),
-  weavery: peak('weavery', 'Windkuppe', S(12, -11.5), 5.0, 2.8),
+  // vorne rechts neben der Flachsterrasse: die Brücke dorthin läuft quer durchs Bild
+  weavery: peak('weavery', 'Windkuppe', S(13.5, -11.5), 3.2, 2.8),
   berry: peak('berry', 'Beerenhang', S(-9.5, -7.5), 4.3, 3.1),
   wheat: peak('wheat', 'Sonnenterrasse', S(-2.5, -11.5), 3.4, 3.4),
   flax: peak('flax', 'Flachsterrasse', S(5, -12.5), 2.6, 3.1),
@@ -77,7 +78,7 @@ export const CONNECTIONS: Connection[] = [
   connect('village', 'research', 'stairs'),
   connect('village', 'quarry', 'stairs'),
   connect('village', 'clay', 'stairs'),
-  connect('clay', 'weavery', 'bridge'),
+  connect('flax', 'weavery', 'bridge'),
   connect('village', 'berry', 'stairs'),
   connect('berry', 'wheat', 'stairs'),
   connect('wheat', 'flax', 'stairs'),
@@ -122,17 +123,21 @@ function plot(peakKey: string, at: Vec2, work: number, radius: number, labelHeig
 
 export const PLOTS: Record<string, Plot> = {
   berryFarm: plot('berry', PEAKS.berry.pos, 0.6, 2.5, 2.6),
-  lumberCamp: plot('forest', S(-14.8, 6.9), 1.9, 2.6, 3.8),
-  sawmill: plot('forest', S(-11.2, 3.5), 1.9, 2.3, 4.1),
-  wheatField: plot('wheat', PEAKS.wheat.pos, 0.4, 2.6, 2.6),
-  kitchen: plot('village', S(-0.75, -4.23), 1.9, 2.3, 4.3),
+  // Holzfäller und Sägewerk seitlich weit genug auseinander, damit das Sägewerk die Hütte nicht verdeckt
+  lumberCamp: plot('forest', S(-15.4, 6.6), 1.9, 2.6, 3.8),
+  sawmill: plot('forest', S(-10.6, 3.4), 1.9, 2.3, 4.1),
+  // Arbeitsplatz am vorderen Feldrand, nicht zwischen den Halmen
+  wheatField: plot('wheat', PEAKS.wheat.pos, 1.7, 2.6, 2.6),
+  // vorne rechts am Platz: verdeckt so weder den Brunnen noch wartende Bewohner
+  kitchen: plot('village', S(4.0, -4.2), 1.9, 2.3, 4.3),
   quarry: plot('quarry', PEAKS.quarry.pos, 2.1, 2.7, 3.6),
   researchLab: plot('research', PEAKS.research.pos, 1.8, 2.1, 6.2),
-  clayPit: plot('clay', S(12.2, -2.7), 1.8, 2.4, 3.0),
-  brickKiln: plot('clay', S(14.8, 0.5), 1.9, 2.2, 3.8),
+  // Tonkuhle vorne links, Ziegelei hinten rechts: seitlich versetzt, damit keine die andere verdeckt
+  clayPit: plot('clay', S(11.0, -3.2), 1.8, 2.4, 3.0),
+  brickKiln: plot('clay', S(15.4, 1.2), 1.9, 2.2, 3.8),
   trainStation: plot('station', PEAKS.station.pos, 0, 2.4, 3.9),
-  flaxField: plot('flax', PEAKS.flax.pos, 0.4, 2.4, 2.6),
-  weavery: plot('weavery', PEAKS.weavery.pos, 1.9, 2.3, 4.2),
+  flaxField: plot('flax', PEAKS.flax.pos, 1.6, 2.4, 2.6),
+  weavery: plot('weavery', S(13.9, -11.5), 1.9, 2.3, 4.2),
 };
 
 export const LANDMARKS = ['researchLab', 'trainStation'] as const;
@@ -141,14 +146,12 @@ export type LandmarkKey = (typeof LANDMARKS)[number];
 /** Bergsee auf der Seeterrasse (bei der Tonkuhle). */
 export const LAKE = { pos: S(16.2, -3.3), r: 1.35, y: PEAKS.clay.y - 0.12 };
 
-const homeAt = (deg: number, radius = 4.75): Vec2 => {
-  const a = (deg * Math.PI) / 180;
-  return S(Math.cos(a) * radius, Math.sin(a) * radius);
-};
-export const HOME_SLOTS: Vec2[] = [homeAt(130), homeAt(82), homeAt(58), homeAt(22), homeAt(-18)];
+// Hütten und Tisch sind (in Bildschirm-Koordinaten) so gesetzt, dass aus Kamerasicht nichts
+// hintereinander steht: keine Hütte hinter dem Rathaus, nichts vor Brunnen, Treppen oder Brücken.
+export const HOME_SLOTS: Vec2[] = [S(1.0, 6.0), S(-4.2, -5.4), S(3.4, 5.8), S(-2.2, -4.0), S(6.0, 2.8)];
 
-/** Langer Esstisch auf dem Dorfplatz neben der Küche. */
-export const TABLE_POS: Vec2 = homeAt(-55, 4.1);
+/** Langer Esstisch vorne am Dorfplatz (niedrig, verdeckt nichts dahinter). */
+export const TABLE_POS: Vec2 = S(0.4, -6.2);
 
 /** Drehung um Y, sodass die lokale +Z-Achse (Vorderseite) zum Dorfplatz zeigt. */
 export function facePlaza([x, z]: Vec2) {
@@ -158,16 +161,41 @@ export function facePlaza([x, z]: Vec2) {
 /** Blickrichtung des Tisches (die Bänke stehen quer zur Mitte). */
 export const TABLE_ROT = facePlaza(TABLE_POS) + Math.PI / 2;
 
-function towardPlaza([x, z]: Vec2): Vec2 {
-  const len = Math.hypot(x, z) || 1;
-  return [-x / len, -z / len];
+// ---------- Sichtachse ----------
+// Die Kamera schaut immer aus derselben Richtung (siehe MapCamera). Damit nichts verdeckt wird,
+// zeigen Gebäude ihre Vorderseite zur Kamera, und Arbeiter stehen auf der Kameraseite.
+
+/** Waagerechte Richtung vom Gelände zur Kamera (Gegenteil von FAR). */
+export const TO_CAMERA: Vec2 = [-FAR[0], -FAR[1]];
+/** Richtung zur Kamera inkl. Höhe, normiert (gleich wie VIEW_DIR in MapCamera). */
+export const VIEW_TO_CAMERA: Vec3 = (() => {
+  const v: Vec3 = [14, 15, 17.5];
+  const l = Math.hypot(...v);
+  return [v[0] / l, v[1] / l, v[2] / l];
+})();
+const CAMERA_ROT = Math.atan2(TO_CAMERA[0], TO_CAMERA[1]);
+
+/** Bildschirm-Koordinaten eines Punkts: x nach rechts, Tiefe (größer = weiter weg). */
+export const toScreen = ([x, z]: Vec2): Vec2 => [x * RIGHT[0] + z * RIGHT[1], x * FAR[0] + z * FAR[1]];
+
+/**
+ * Drehung eines Gebäudes: Vorderseite zur Kamera, höchstens leicht (±23°) zum Dorfplatz geneigt.
+ * So sieht man jede Tür, und der Arbeitsplatz davor liegt nie hinter dem Gebäude.
+ */
+export function buildingRot(pos: Vec2) {
+  let d = facePlaza(pos) - CAMERA_ROT;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return CAMERA_ROT + Math.max(-0.4, Math.min(0.4, d));
 }
 
-/** Standplatz des n-ten Arbeiters vor einem Gebäude. */
+/** Standplatz des n-ten Arbeiters vor einem Gebäude (immer auf der Kameraseite). */
 export function workSpot(type: string, index: number): Vec2 {
   const p = PLOTS[type];
   if (!p) return [0, 0];
-  const [dx, dz] = towardPlaza(p.pos);
+  const r = buildingRot(p.pos);
+  const dx = Math.sin(r);
+  const dz = Math.cos(r);
   const side = (index - 0.5) * 1.1;
   return [p.pos[0] + dx * p.work - dz * side, p.pos[1] + dz * p.work + dx * side];
 }
@@ -183,17 +211,21 @@ export function tableSpot(index: number): Vec2 {
   return [TABLE_POS[0] + lx * c + lz * s, TABLE_POS[1] - lx * s + lz * c];
 }
 
-/** Platz vor der eigenen Hütte. */
+/** Platz vor der eigenen Hütte (auf der Kameraseite, wie bei den Gebäuden). */
 export function homeSpot(index: number): Vec2 {
   const [x, z] = HOME_SLOTS[index % HOME_SLOTS.length];
-  const [dx, dz] = towardPlaza([x, z]);
-  return [x + dx * 1.15, z + dz * 1.15];
+  const r = buildingRot([x, z]);
+  return [x + Math.sin(r) * 1.15, z + Math.cos(r) * 1.15];
 }
 
-/** Platz rund um den Brunnen. */
+/** Hütten stehen wie die Gebäude mit der Tür zur Kamera. */
+export const homeRot = (p: Vec2) => buildingRot(p);
+
+/** Wartende Bewohner rund um den Brunnen, nie direkt dahinter (aus Kamerasicht). */
+const PLAZA_SPOTS: Vec2[] = [S(-0.8, -1.95), S(0.8, -1.95), S(1.45, -0.9), S(-1.45, 1.35), S(1.45, 1.35)];
 export function plazaSpot(index: number): Vec2 {
-  const a = (index / 5) * Math.PI * 2 + 0.4;
-  return [Math.cos(a) * 1.8, Math.sin(a) * 1.8];
+  const [x, z] = PLAZA_SPOTS[index % PLAZA_SPOTS.length];
+  return [x + VILLAGE.pos[0], z + VILLAGE.pos[1]];
 }
 
 // ---------- Zufall ----------
